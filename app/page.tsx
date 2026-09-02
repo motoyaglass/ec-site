@@ -1,21 +1,18 @@
-import { supabaseAdmin, Product } from "@/lib/supabase";
+import { query, Product } from "@/lib/db";
 import AddToCartButton from "./components/AddToCartButton";
 import ClearCartOnSuccess from "./components/ClearCartOnSuccess";
 
 export const dynamic = "force-dynamic";
 
 async function getProducts(): Promise<Product[]> {
-  const { data, error } = await supabaseAdmin
-    .from("products")
-    .select("*")
-    .eq("is_active", true)
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    console.error(error);
+  try {
+    return await query<Product>(
+      "select * from products where is_active = true order by created_at desc"
+    );
+  } catch (err) {
+    console.error(err);
     return [];
   }
-  return data ?? [];
 }
 
 function formatPrice(yen: number) {

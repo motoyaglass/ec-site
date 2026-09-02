@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
+import { query, Post } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -7,14 +7,16 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   const all = req.nextUrl.searchParams.get("all");
 
-  let query = supabaseAdmin.from("posts").select("*").order("created_at", { ascending: false });
-  if (!all) {
-    query = query.eq("is_published", true);
+  try {
+    const sql = all
+      ? "select * from posts order by created_at desc"
+      : "select * from posts where is_published = true order by created_at desc";
+    const posts = await query<Post>(sql);
+    return NextResponse.json({ posts });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "failed to load posts";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
-
-  const { data, error } = await query;
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ posts: data });
 }
 
 export async function POST(req: NextRequest) {
@@ -23,17 +25,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "title は必須です" }, { status: 400 });
   }
 
-  const { data, error } = await supabaseAdmin
-    .from("posts")
-    .insert({
-      title: body.title,
-      content: body.content ?? "",
-      cover_image_url: body.cover_image_url || null,
-      is_published: body.is_published ?? true,
-    })
-    .select()
-    .single();
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ post: data });
+  try {
+    const posts = await query<Post>(
+      `insert into posts (title, content, cover_image_url, is_published)
+       values ($1, $2, $3, $4)
+       returning *`,
+      [body.title, body.content ?? "", body.cover_image_url || null, body.is_published ?? true]
+    );
+    return NextResponse.json({ post: posts[0] });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "failed to create post";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }

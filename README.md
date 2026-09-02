@@ -1,6 +1,6 @@
 # 工芸硝子モトヤ - 個人ECサイト
 
-Next.js + Supabase + Stripe で作られた、管理画面から商品とブログ記事を編集できるシンプルなサイトです。カート機能・在庫管理・注文履歴に対応しています。
+Next.js + Railway PostgreSQL + Stripe で作られた、管理画面から商品とブログ記事を編集できるシンプルなサイトです。カート機能・在庫管理・注文履歴に対応しています。
 
 ## 構成
 
@@ -11,21 +11,18 @@ Next.js + Supabase + Stripe で作られた、管理画面から商品とブロ�
 - `/admin` … 管理画面ログイン
 - `/admin/dashboard` … 商品登録・編集・削除、ブログ記事の作成・編集・削除、注文履歴の確認(パスワード保護)
 
-商品・ブログ記事・注文はSupabase(データベース)に保存されます。カートは会員登録なしでブラウザに保存され(localStorage)、「レジに進む」を押すとStripe Checkoutの決済画面に遷移します。決済完了はStripe Webhookで受け取り、注文の記録と在庫の減算を自動で行います。
+商品・ブログ記事・注文はPostgreSQL(データベース)に保存されます。カートは会員登録なしでブラウザに保存され(localStorage)、「レジに進む」を押すとStripe Checkoutの決済画面に遷移します。決済完了はStripe Webhookで受け取り、注文の記録と在庫の減算を自動で行います。
 
 ---
 
 ## セットアップ手順
 
-### 1. Supabaseプロジェクトを作成
+### 1. RailwayでPostgreSQLを用意
 
-1. https://supabase.com でアカウント作成 → 「New project」でプロジェクト作成
-2. 左メニュー「SQL Editor」を開き、`supabase/schema.sql` の内容を貼り付けて実行
-   - 既に以前のバージョンを実行済みの場合も、そのまま全体を再実行して問題ありません(`if not exists` / `add column if not exists` で安全に追加されます)
-3. 左メニュー「Project Settings」→「API」で以下を控える
-   - `Project URL` → `NEXT_PUBLIC_SUPABASE_URL`
-   - `service_role` キー(secretと書かれている方) → `SUPABASE_SERVICE_ROLE_KEY`
-   - ※ service_role キーは絶対に公開しないでください(サーバー側のみで使用します)
+1. Railwayのプロジェクト画面で「+ New」→「Database」→「Add PostgreSQL」
+2. 追加されたPostgresサービスをクリックし、「Variables」タブで `DATABASE_URL` の値を控える(アプリのサービスからは `${{ Postgres.DATABASE_URL }}` の形で参照することもできます)
+3. Postgresサービスの「Data」タブ→「Query」を開き、`db/schema.sql` の内容を貼り付けて実行してテーブルを作成
+   - ローカルに `psql` がある場合は `psql "$DATABASE_URL" -f db/schema.sql` でも実行できます
 
 ### 2. Stripeアカウントを準備
 
@@ -63,6 +60,7 @@ stripe listen --forward-to localhost:3000/api/webhooks/stripe
 cp .env.example .env.local
 ```
 
+- `DATABASE_URL` … 手順1で控えたRailway PostgresのURL
 - `ADMIN_PASSWORD` … 管理画面にログインするためのパスワード。好きな文字列にしてください
 - `ADMIN_SESSION_SECRET` … ログイン状態を保持するための任意のランダム文字列(パスワードとは別の値)。例: `openssl rand -hex 32` で生成
 - `STRIPE_WEBHOOK_SECRET` … 上記の手順3で取得した値
@@ -79,28 +77,20 @@ http://localhost:3000 でショップページ、http://localhost:3000/admin で
 
 ---
 
-## デプロイ
-
-### Railwayの場合
+## デプロイ(Railway)
 
 1. このフォルダをGitHubリポジトリにpush
 2. Railwayで「New Project」→「Deploy from GitHub repo」でこのリポジトリを選択
-3. サービスの「Variables」タブに `.env.local` と同じ内容を環境変数として設定
+3. 同じRailwayプロジェクト内に「セットアップ手順 1」のPostgresサービスを追加(まだの場合)
+4. アプリのサービスの「Variables」タブに `.env.local` と同じ内容を環境変数として設定
+   - `DATABASE_URL` はPostgresサービスの値を参照する形(`${{ Postgres.DATABASE_URL }}`)で設定すると管理が楽です
    - `NEXT_PUBLIC_SITE_URL` はデプロイ後に発行される実際のURL(独自ドメイン)に変更
-4. デプロイが完了したら、サービスの Settings → Networking → Public Networking で「+ Custom Domain」から独自ドメインを追加
-5. 表示される CNAMEレコードとTXTレコードを、ドメインを購入したサービスのDNS設定画面に追加(TXTレコードがないと反映されないので注意)
-6. 反映されるとRailwayが自動でSSL証明書を発行します
-7. 上記の「Stripe Webhookを設定」の本番手順で、本番ドメインのWebhookエンドポイントを追加
+5. デプロイが完了したら、サービスの Settings → Networking → Public Networking で「+ Custom Domain」から独自ドメインを追加
+6. 表示される CNAMEレコードとTXTレコードを、ドメインを購入したサービスのDNS設定画面に追加(TXTレコードがないと反映されないので注意)
+7. 反映されるとRailwayが自動でSSL証明書を発行します
+8. 上記の「Stripe Webhookを設定」の本番手順で、本番ドメインのWebhookエンドポイントを追加
 
-### Vercelの場合
-
-1. このフォルダをGitHubリポジトリにpush
-2. https://vercel.com でGitHubリポジトリをImport
-3. Vercelの「Environment Variables」に `.env.local` と同じ内容を設定
-4. Deploy
-5. デプロイ後、本番用のStripe Webhookエンドポイントを追加
-
-どちらの場合も、Stripeを本番稼働させる際は本番キー(`sk_live_...`)に切り替え、`NEXT_PUBLIC_SITE_URL` も本番ドメインにしてください。
+Stripeを本番稼働させる際は本番キー(`sk_live_...`)に切り替え、`NEXT_PUBLIC_SITE_URL` も本番ドメインにしてください。
 
 ---
 
@@ -117,7 +107,7 @@ http://localhost:3000 でショップページ、http://localhost:3000/admin で
 5. 記事一覧の「編集」「削除」から既存記事を管理
 6. 「注文履歴」で、決済が完了した注文(商品・数量・金額・購入者メール・配送先住所)を確認できます
 
-画像はURLを指定する形式です(例: 画像ホスティングサービスや、SupabaseのStorage機能にアップロードしたファイルのURLなど)。ファイルアップロード機能が必要であれば別途追加できます。
+画像はURLを指定する形式です(例: 画像ホスティングサービスにアップロードしたファイルのURLなど)。ファイルアップロード機能が必要であれば別途追加できます。
 
 ---
 

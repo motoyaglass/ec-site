@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
+import { query, Product } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -7,28 +7,62 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   const body = await req.json().catch(() => null);
   if (!body) return NextResponse.json({ error: "invalid body" }, { status: 400 });
 
-  const update: Record<string, unknown> = {};
-  if (typeof body.name === "string") update.name = body.name;
-  if (typeof body.price === "number") update.price = Math.round(body.price);
-  if (typeof body.description === "string") update.description = body.description;
-  if (typeof body.image_url === "string" || body.image_url === null) update.image_url = body.image_url || null;
-  if (typeof body.is_active === "boolean") update.is_active = body.is_active;
-  if (typeof body.stock_quantity === "number")
-    update.stock_quantity = Math.max(0, Math.floor(body.stock_quantity));
+  const fields: string[] = [];
+  const values: unknown[] = [];
+  let i = 1;
 
-  const { data, error } = await supabaseAdmin
-    .from("products")
-    .update(update)
-    .eq("id", params.id)
-    .select()
-    .single();
+  if (typeof body.name === "string") {
+    fields.push(`name = $${i++}`);
+    values.push(body.name);
+  }
+  if (typeof body.price === "number") {
+    fields.push(`price = $${i++}`);
+    values.push(Math.round(body.price));
+  }
+  if (typeof body.description === "string") {
+    fields.push(`description = $${i++}`);
+    values.push(body.description);
+  }
+  if (typeof body.image_url === "string" || body.image_url === null) {
+    fields.push(`image_url = $${i++}`);
+    values.push(body.image_url || null);
+  }
+  if (typeof body.is_active === "boolean") {
+    fields.push(`is_active = $${i++}`);
+    values.push(body.is_active);
+  }
+  if (typeof body.stock_quantity === "number") {
+    fields.push(`stock_quantity = $${i++}`);
+    values.push(Math.max(0, Math.floor(body.stock_quantity)));
+  }
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ product: data });
+  if (fields.length === 0) {
+    return NextResponse.json({ error: "更新する項目がありません" }, { status: 400 });
+  }
+
+  values.push(params.id);
+
+  try {
+    const products = await query<Product>(
+      `update products set ${fields.join(", ")} where id = $${i} returning *`,
+      values
+    );
+    if (products.length === 0) {
+      return NextResponse.json({ error: "商品が見つかりません" }, { status: 404 });
+    }
+    return NextResponse.json({ product: products[0] });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "failed to update product";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
-  const { error } = await supabaseAdmin.from("products").delete().eq("id", params.id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ ok: true });
+  try {
+    await query("delete from products where id = $1", [params.id]);
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "failed to delete product";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }

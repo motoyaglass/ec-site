@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { supabaseAdmin } from "@/lib/supabase";
+import { pool, queryOne } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -44,12 +44,10 @@ export async function POST(req: NextRequest) {
 async function recordOrderAndDecrementStock(stripe: Stripe, session: Stripe.Checkout.Session) {
   // 冪等性: Stripeはイベントを複数回送信することがあるため、同じセッションIDの注文が
   // 既に保存されていれば何もしない(在庫の二重減算を防ぐ)
-  const { data: existingOrder } = await supabaseAdmin
-    .from("orders")
-    .select("id")
-    .eq("stripe_session_id", session.id)
-    .maybeSingle();
-
+  const existingOrder = await queryOne<{ id: string }>(
+    "select id from orders where stripe_session_id = $1",
+    [session.id]
+  );
   if (existingOrder) return;
 
   const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 100 });
@@ -74,17 +72,21 @@ async function recordOrderAndDecrementStock(stripe: Stripe, session: Stripe.Chec
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const shipping = (session as any).shipping_details ?? (session as any).shipping ?? null;
 
-  await supabaseAdmin.from("orders").insert({
-    stripe_session_id: session.id,
-    customer_email: session.customer_details?.email ?? null,
-    shipping_name: shipping?.name ?? session.customer_details?.name ?? null,
-    shipping_address: shipping?.address ?? session.customer_details?.address ?? null,
-    items,
-    amount_total: session.amount_total ?? 0,
-  });
+  await pool.query(
+    `insert into orders (stripe_session_id, customer_email, shipping_name, shipping_address, items, amount_total)
+     values ($1, $2, $3, $4, $5, $6)`,
+    [
+      session.id,
+      session.customer_details?.email ?? null,
+      shipping?.name ?? session.customer_details?.name ?? null,
+      shipping?.address ? JSON.stringify(shipping.address) : null,
+      JSON.stringify(items),
+      session.amount_total ?? 0,
+    ]
+  );
 
   for (const m of metaItems) {
     if (!m.productId || !m.quantity) continue;
-    await supabaseAdmin.rpc("decrement_stock", { p_id: m.productId, qty: m.quantity });
+    await pool.query("select decrement_stock($1, $2)", [m.productId, m.quantity]);
   }
 }

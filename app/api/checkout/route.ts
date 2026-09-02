@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { supabaseAdmin } from "@/lib/supabase";
+import { query, Product } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -33,17 +33,18 @@ export async function POST(req: NextRequest) {
   }
 
   const ids = normalized.map((i) => i.productId);
-  const { data: products, error } = await supabaseAdmin
-    .from("products")
-    .select("*")
-    .in("id", ids)
-    .eq("is_active", true);
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  let products: Product[];
+  try {
+    products = await query<Product>(
+      "select * from products where id = any($1::uuid[]) and is_active = true",
+      [ids]
+    );
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "failed to load products";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 
-  const productMap = new Map((products ?? []).map((p) => [p.id, p]));
+  const productMap = new Map(products.map((p) => [p.id, p]));
   const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
 
   for (const item of normalized) {

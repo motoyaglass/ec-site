@@ -1,18 +1,18 @@
 import { notFound } from "next/navigation";
-import { supabaseAdmin, Post } from "@/lib/supabase";
+import { queryOne, Post } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
 async function getPost(id: string): Promise<Post | null> {
-  const { data, error } = await supabaseAdmin
-    .from("posts")
-    .select("*")
-    .eq("id", id)
-    .eq("is_published", true)
-    .single();
-
-  if (error || !data) return null;
-  return data;
+  try {
+    return await queryOne<Post>(
+      "select * from posts where id = $1 and is_published = true",
+      [id]
+    );
+  } catch (err) {
+    console.error(err);
+    return null;
+  }
 }
 
 function formatDate(iso: string) {

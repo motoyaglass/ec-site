@@ -1,20 +1,17 @@
 import Link from "next/link";
-import { supabaseAdmin, Post } from "@/lib/supabase";
+import { query, Post } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
 async function getPosts(): Promise<Post[]> {
-  const { data, error } = await supabaseAdmin
-    .from("posts")
-    .select("*")
-    .eq("is_published", true)
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    console.error(error);
+  try {
+    return await query<Post>(
+      "select * from posts where is_published = true order by created_at desc"
+    );
+  } catch (err) {
+    console.error(err);
     return [];
   }
-  return data ?? [];
 }
 
 function formatDate(iso: string) {

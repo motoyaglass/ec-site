@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import type { Product, Post, Order } from "@/lib/supabase";
+import type { Product, Post, Order } from "@/lib/db";
 import RichTextEditor from "../../components/RichTextEditor";
 
 const emptyProductForm = {

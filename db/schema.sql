@@ -1,4 +1,6 @@
--- Supabase SQL Editor に貼り付けて実行してください。
+-- Railway PostgreSQLに接続して実行してください。
+-- 例: psql "$DATABASE_URL" -f db/schema.sql
+-- または Railwayダッシュボードの Postgres サービス → Data タブ → Query から貼り付けて実行できます。
 
 create extension if not exists pgcrypto;
 
@@ -49,13 +51,3 @@ create table if not exists posts (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
-
--- このアプリはサーバー側(service role key)からのみDBにアクセスするため、
--- RLSは有効にしたうえでポリシーを追加せず、クライアントからの直接アクセスを遮断します。
-alter table products enable row level security;
-alter table posts enable row level security;
-alter table orders enable row level security;
-
--- 以前のプロフィール機能で使っていた profile テーブルは現在アプリから参照されなくなりました。
--- 既存データが不要であれば、以下のコメントを外して手動で削除できます。
--- drop table if exists profile;
