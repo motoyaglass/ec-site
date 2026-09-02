@@ -31,19 +31,44 @@ a {
   color: inherit;
 }
 
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 20px 96px 20px 24px;
+}
+
 .site-logo-block {
-  position: fixed;
-  top: 16px;
-  left: 16px;
-  z-index: 50;
   display: inline-flex;
   align-items: center;
   text-decoration: none;
 }
 
 .site-logo-img {
-  height: 64px;
+  height: 96px;
   width: auto;
+}
+
+.site-nav {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.site-nav-link {
+  text-decoration: none;
+  font-size: 14px;
+  color: var(--muted);
+  padding-bottom: 3px;
+  border-bottom: 2px solid transparent;
+}
+
+.site-nav-link.active {
+  color: var(--fg);
+  border-bottom-color: var(--fg);
 }
 
 .cart-button {
@@ -90,22 +115,25 @@ a {
 main {
   max-width: 960px;
   margin: 0 auto;
-  padding: 96px 24px 120px;
+  padding: 24px 24px 120px;
   min-height: 60vh;
 }
 
 @media (max-width: 640px) {
-  .site-logo-img {
-    height: 100px;
+  .site-header {
+    padding: 16px 80px 16px 16px;
   }
 
-  .site-logo-block {
-    top: 12px;
-    left: 12px;
+  .site-logo-img {
+    height: 56px;
+  }
+
+  .site-nav {
+    gap: 14px;
   }
 
   main {
-    padding: 84px 16px 110px;
+    padding: 16px 16px 110px;
   }
 
   .cart-button {
@@ -116,47 +144,6 @@ main {
   .page-title {
     font-size: 22px;
   }
-}
-
-.bottom-switcher {
-  position: fixed;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 50;
-  display: flex;
-  background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 4px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-}
-
-.bottom-switcher-indicator {
-  position: absolute;
-  top: 4px;
-  bottom: 4px;
-  left: 4px;
-  border-radius: 999px;
-  background: var(--fg);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 0;
-}
-
-.bottom-switcher a {
-  position: relative;
-  z-index: 1;
-  text-align: center;
-  padding: 10px 0;
-  border-radius: 999px;
-  font-size: 14px;
-  text-decoration: none;
-  color: var(--muted);
-  transition: color 0.3s ease;
-}
-
-.bottom-switcher a.active {
-  color: #fff;
 }
 
 .page-title {
@@ -784,10 +771,6 @@ main {
     gap: 8px;
     font-size: 13px;
     min-width: 480px;
-  }
-
-  .bottom-switcher {
-    bottom: 16px;
   }
 
   .stats-grid {

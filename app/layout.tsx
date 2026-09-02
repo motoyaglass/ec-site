@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import Logo from "./components/Logo";
-import BottomSwitcher from "./components/BottomSwitcher";
+import Header from "./components/Header";
 import CartButton from "./components/CartButton";
 import { CartProvider } from "./components/CartContext";
 import VisitTracker from "./components/VisitTracker";
@@ -19,13 +17,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <CartProvider>
           <VisitTracker />
           <CartButton />
-          <main>
-            <Link href="/" className="site-logo-block" aria-label="工芸硝子モトヤ トップページ">
-              <Logo />
-            </Link>
-            {children}
-          </main>
-          <BottomSwitcher />
+          <Header />
+          <main>{children}</main>
         </CartProvider>
       </body>
     </html>
