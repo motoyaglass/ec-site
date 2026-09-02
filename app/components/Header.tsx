@@ -17,10 +17,10 @@ export default function Header() {
       <div className="site-header-right">
         <nav className="site-nav">
           <Link href="/" className={`site-nav-link ${!isBlog ? "active" : ""}`}>
-            ショップ
+            SHOP
           </Link>
           <Link href="/blog" className={`site-nav-link ${isBlog ? "active" : ""}`}>
-            ブログ
+            BLOG
           </Link>
         </nav>
         <CartButton />

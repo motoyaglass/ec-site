@@ -28,7 +28,6 @@ export default async function ShopPage({
 
   return (
     <div>
-      <h1 className="page-title">ショップ</h1>
       <ClearCartOnSuccess success={searchParams.checkout === "success"} />
 
       {searchParams.checkout === "success" && (

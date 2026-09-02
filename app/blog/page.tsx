@@ -35,8 +35,6 @@ export default async function BlogListPage() {
 
   return (
     <div>
-      <h1 className="page-title">ブログ</h1>
-
       {posts.length === 0 ? (
         <div className="empty-state">まだ記事がありません。</div>
       ) : (
