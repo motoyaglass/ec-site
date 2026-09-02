@@ -1,0 +1,61 @@
+import Link from "next/link";
+import { supabaseAdmin, Post } from "@/lib/supabase";
+
+export const dynamic = "force-dynamic";
+
+async function getPosts(): Promise<Post[]> {
+  const { data, error } = await supabaseAdmin
+    .from("posts")
+    .select("*")
+    .eq("is_published", true)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error(error);
+    return [];
+  }
+  return data ?? [];
+}
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("ja-JP", { year: "numeric", month: "long", day: "numeric" });
+}
+
+function excerpt(html: string, max = 90) {
+  const text = html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+  return text.length > max ? `${text.slice(0, max)}…` : text;
+}
+
+export default async function BlogListPage() {
+  const posts = await getPosts();
+
+  return (
+    <div>
+      <h1 className="page-title">Blog</h1>
+
+      {posts.length === 0 ? (
+        <div className="empty-state">まだ記事がありません。</div>
+      ) : (
+        <div className="post-list">
+          {posts.map((p) => (
+            <div className="post-list-item" key={p.id}>
+              {p.cover_image_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={p.cover_image_url} alt={p.title} className="post-thumb" />
+              ) : (
+                <div className="post-thumb-placeholder" />
+              )}
+              <div className="post-list-body">
+                <Link href={`/blog/${p.id}`} className="post-title">
+                  {p.title}
+                </Link>
+                <p className="post-date">{formatDate(p.created_at)}</p>
+                <p className="post-excerpt">{excerpt(p.content)}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
