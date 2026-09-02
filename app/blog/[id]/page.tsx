@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { queryOne, Post } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -13,6 +14,33 @@ async function getPost(id: string): Promise<Post | null> {
     console.error(err);
     return null;
   }
+}
+
+function excerpt(html: string, max = 120) {
+  const text = html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+  return text.length > max ? `${text.slice(0, max)}…` : text;
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: { id: string };
+}): Promise<Metadata> {
+  const post = await getPost(params.id);
+  if (!post) return {};
+
+  const description = excerpt(post.content);
+
+  return {
+    title: post.title,
+    description,
+    openGraph: {
+      title: post.title,
+      description,
+      type: "article",
+      images: post.cover_image_url ? [post.cover_image_url] : undefined,
+    },
+  };
 }
 
 function formatDate(iso: string) {

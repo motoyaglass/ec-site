@@ -38,7 +38,7 @@ a {
   gap: 16px;
   max-width: 960px;
   margin: 0 auto;
-  padding: 20px 96px 20px 24px;
+  padding: 16px 24px;
 }
 
 .site-logo-block {
@@ -48,8 +48,14 @@ a {
 }
 
 .site-logo-img {
-  height: 96px;
+  height: 72px;
   width: auto;
+}
+
+.site-header-right {
+  display: flex;
+  align-items: center;
+  gap: 24px;
 }
 
 .site-nav {
@@ -72,15 +78,13 @@ a {
 }
 
 .cart-button {
-  position: fixed;
-  top: 16px;
-  right: 16px;
-  z-index: 50;
+  position: relative;
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 56px;
-  height: 56px;
+  width: 48px;
+  height: 48px;
   background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: 50%;
@@ -115,30 +119,61 @@ a {
 main {
   max-width: 960px;
   margin: 0 auto;
-  padding: 24px 24px 120px;
+  padding: 24px 24px 64px;
   min-height: 60vh;
+}
+
+.site-footer {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 24px 40px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.8;
+}
+
+.site-footer-copyright {
+  margin-top: 8px;
 }
 
 @media (max-width: 640px) {
   .site-header {
-    padding: 16px 80px 16px 16px;
+    padding: 12px 16px;
   }
 
   .site-logo-img {
-    height: 56px;
+    height: 48px;
+  }
+
+  .site-header-right {
+    gap: 12px;
   }
 
   .site-nav {
-    gap: 14px;
+    gap: 12px;
   }
 
-  main {
-    padding: 16px 16px 110px;
+  .site-nav-link {
+    font-size: 13px;
   }
 
   .cart-button {
-    top: 12px;
-    right: 12px;
+    width: 40px;
+    height: 40px;
+  }
+
+  .cart-button svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  main {
+    padding: 16px 16px 48px;
+  }
+
+  .site-footer {
+    padding: 16px 16px 32px;
   }
 
   .page-title {

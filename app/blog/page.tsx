@@ -1,7 +1,14 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { query, Post } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "ブログ",
+  description:
+    "ガラス作家・小野資矢による工芸硝子モトヤの制作日記。ガラス作品づくりの様子やお知らせを綴っています。",
+};
 
 async function getPosts(): Promise<Post[]> {
   try {
@@ -28,7 +35,7 @@ export default async function BlogListPage() {
 
   return (
     <div>
-      <h1 className="page-title">Blog</h1>
+      <h1 className="page-title">ブログ</h1>
 
       {posts.length === 0 ? (
         <div className="empty-state">まだ記事がありません。</div>
