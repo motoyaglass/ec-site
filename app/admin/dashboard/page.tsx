@@ -31,6 +31,7 @@ export default function AdminDashboardPage() {
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [productError, setProductError] = useState<string | null>(null);
   const [savingProduct, setSavingProduct] = useState(false);
+  const [uploadingProductImage, setUploadingProductImage] = useState(false);
 
   // ブログ管理
   const [posts, setPosts] = useState<Post[]>([]);
@@ -153,6 +154,27 @@ export default function AdminDashboardPage() {
       setProductError(err instanceof Error ? err.message : "エラーが発生しました");
     } finally {
       setSavingProduct(false);
+    }
+  }
+
+  async function handleProductImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // 同じファイルを選び直せるようにリセット
+    if (!file) return;
+
+    setUploadingProductImage(true);
+    setProductError(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "画像のアップロードに失敗しました");
+      setProductForm((f) => ({ ...f, image_url: data.url }));
+    } catch (err) {
+      setProductError(err instanceof Error ? err.message : "画像のアップロードに失敗しました");
+    } finally {
+      setUploadingProductImage(false);
     }
   }
 
@@ -279,12 +301,27 @@ export default function AdminDashboardPage() {
             />
           </div>
           <div className="field">
-            <label>画像URL(任意)</label>
+            <label>商品画像(任意)</label>
             <input
-              value={productForm.image_url}
-              onChange={(e) => setProductForm((f) => ({ ...f, image_url: e.target.value }))}
-              placeholder="https://..."
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/gif"
+              onChange={handleProductImageSelect}
+              disabled={uploadingProductImage}
             />
+            {uploadingProductImage && <p className="hint">アップロード中...</p>}
+            {productForm.image_url && (
+              <div className="row" style={{ marginTop: 8, alignItems: "center" }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={productForm.image_url} alt="プレビュー" className="admin-thumb" />
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setProductForm((f) => ({ ...f, image_url: "" }))}
+                >
+                  画像を削除
+                </button>
+              </div>
+            )}
           </div>
           <div className="field">
             <label>在庫数</label>

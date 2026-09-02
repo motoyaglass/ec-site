@@ -11,7 +11,9 @@ export function middleware(req: NextRequest) {
     (pathname.startsWith("/api/products") && req.method !== "GET") ||
     (pathname.startsWith("/api/posts") && req.method !== "GET") ||
     // /api/orders は注文者の個人情報を含むため、GETも含めて常に保護する
-    pathname.startsWith("/api/orders");
+    pathname.startsWith("/api/orders") ||
+    // /api/upload は管理画面からの画像アップロード専用(配信用の /api/uploads/* は公開のまま)
+    (pathname === "/api/upload" || pathname.startsWith("/api/upload/"));
 
   if (!isProtectedPage && !isProtectedApi) {
     return NextResponse.next();
@@ -39,5 +41,6 @@ export const config = {
     "/api/products/:path*",
     "/api/posts/:path*",
     "/api/orders/:path*",
+    "/api/upload/:path*",
   ],
 };
