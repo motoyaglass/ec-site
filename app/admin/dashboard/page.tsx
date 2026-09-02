@@ -6,12 +6,27 @@ import type { Product, Post, Order, Partner } from "@/lib/db";
 import RichTextEditor from "../../components/RichTextEditor";
 
 type DailyStat = { day: string; count: number };
+type HourlyStat = { hour: string; count: number };
+type PathStat = { path: string; count: number };
+type SourceStat = { source: string; count: number };
+type DeviceStat = { device: string; count: number };
 type Stats = {
   today: number;
   last7: number;
   last30: number;
   total: number;
   daily: DailyStat[];
+  hourly: HourlyStat[];
+  topPaths: PathStat[];
+  sources: SourceStat[];
+  devices: DeviceStat[];
+};
+
+const deviceLabel: Record<string, string> = {
+  pc: "PC",
+  mobile: "モバイル",
+  tablet: "タブレット",
+  不明: "不明",
 };
 
 const emptyProductForm = {
@@ -116,6 +131,21 @@ export default function AdminDashboardPage() {
 
   const maxDaily = useMemo(
     () => Math.max(1, ...(stats?.daily.map((d) => d.count) ?? [0])),
+    [stats]
+  );
+
+  const maxHourly = useMemo(
+    () => Math.max(1, ...(stats?.hourly.map((h) => h.count) ?? [0])),
+    [stats]
+  );
+
+  const totalSources = useMemo(
+    () => Math.max(1, (stats?.sources ?? []).reduce((sum, s) => sum + s.count, 0)),
+    [stats]
+  );
+
+  const totalDevices = useMemo(
+    () => Math.max(1, (stats?.devices ?? []).reduce((sum, d) => sum + d.count, 0)),
     [stats]
   );
 
@@ -438,6 +468,78 @@ export default function AdminDashboardPage() {
             <p className="hint">
               ページを開いた回数(閲覧数)を記録しています。管理画面へのアクセスは含みません。
             </p>
+
+            <h3 className="stats-subheading">時間帯別アクセス(過去30日・日本時間)</h3>
+            {stats.hourly.length > 0 && (
+              <div className="stats-daily">
+                {stats.hourly.map((h) => (
+                  <div className="stats-daily-row" key={h.hour}>
+                    <span className="stats-daily-date">{h.hour}時</span>
+                    <div className="stats-daily-bar-track">
+                      <div
+                        className="stats-daily-bar"
+                        style={{ width: `${(h.count / maxHourly) * 100}%` }}
+                      />
+                    </div>
+                    <span className="stats-daily-count">{h.count}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="stats-marketing-grid">
+              <div>
+                <h3 className="stats-subheading">人気ページ(過去30日)</h3>
+                {stats.topPaths.length === 0 ? (
+                  <p className="hint">データがありません。</p>
+                ) : (
+                  <ul className="stats-rank-list">
+                    {stats.topPaths.map((p) => (
+                      <li key={p.path}>
+                        <span className="stats-rank-label">{p.path}</span>
+                        <span className="stats-rank-count">{p.count}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <div>
+                <h3 className="stats-subheading">流入元(過去30日)</h3>
+                {stats.sources.length === 0 ? (
+                  <p className="hint">データがありません。</p>
+                ) : (
+                  <ul className="stats-rank-list">
+                    {stats.sources.map((s) => (
+                      <li key={s.source}>
+                        <span className="stats-rank-label">{s.source}</span>
+                        <span className="stats-rank-count">
+                          {s.count}({Math.round((s.count / totalSources) * 100)}%)
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <div>
+                <h3 className="stats-subheading">デバイス(過去30日)</h3>
+                {stats.devices.length === 0 ? (
+                  <p className="hint">データがありません。</p>
+                ) : (
+                  <ul className="stats-rank-list">
+                    {stats.devices.map((d) => (
+                      <li key={d.device}>
+                        <span className="stats-rank-label">{deviceLabel[d.device] ?? d.device}</span>
+                        <span className="stats-rank-count">
+                          {d.count}({Math.round((d.count / totalDevices) * 100)}%)
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
           </>
         )}
       </div>

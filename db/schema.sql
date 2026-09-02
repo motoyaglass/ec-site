@@ -56,8 +56,14 @@ create table if not exists posts (
 create table if not exists page_views (
   id bigserial primary key,
   path text not null,
+  referrer text,
+  device text,
   created_at timestamptz not null default now()
 );
+
+-- 既存環境向け(テーブルが既にある場合に列を追加)
+alter table page_views add column if not exists referrer text;
+alter table page_views add column if not exists device text;
 
 create index if not exists page_views_created_at_idx on page_views (created_at);
 
