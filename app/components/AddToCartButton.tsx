@@ -32,7 +32,7 @@ export default function AddToCartButton({
       disabled={soldOut}
       style={{ width: "100%" }}
     >
-      {soldOut ? "SOLD OUT" : added ? "カートに追加しました" : "カートに入れる"}
+      {soldOut ? "SOLD OUT" : added ? "買物籠に追加しました" : "買物籠に入れる"}
     </button>
   );
 }

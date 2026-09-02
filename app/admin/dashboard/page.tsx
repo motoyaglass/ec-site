@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import type { Product, Post, Order } from "@/lib/db";
+import type { Product, Post, Order, Partner } from "@/lib/db";
 import RichTextEditor from "../../components/RichTextEditor";
 
 type DailyStat = { day: string; count: number };
@@ -30,6 +30,11 @@ const emptyPostForm = {
   is_published: true,
 };
 
+const emptyPartnerForm = {
+  name: "",
+  is_active: true,
+};
+
 export default function AdminDashboardPage() {
   const router = useRouter();
 
@@ -49,6 +54,14 @@ export default function AdminDashboardPage() {
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [postError, setPostError] = useState<string | null>(null);
   const [savingPost, setSavingPost] = useState(false);
+
+  // 取引先管理
+  const [partners, setPartners] = useState<Partner[]>([]);
+  const [loadingPartners, setLoadingPartners] = useState(true);
+  const [partnerForm, setPartnerForm] = useState(emptyPartnerForm);
+  const [editingPartnerId, setEditingPartnerId] = useState<string | null>(null);
+  const [partnerError, setPartnerError] = useState<string | null>(null);
+  const [savingPartner, setSavingPartner] = useState(false);
 
   // 注文履歴
   const [orders, setOrders] = useState<Order[]>([]);
@@ -72,6 +85,14 @@ export default function AdminDashboardPage() {
     const data = await res.json();
     setPosts(data.posts ?? []);
     setLoadingPosts(false);
+  }, []);
+
+  const loadPartners = useCallback(async () => {
+    setLoadingPartners(true);
+    const res = await fetch("/api/partners?all=1");
+    const data = await res.json();
+    setPartners(data.partners ?? []);
+    setLoadingPartners(false);
   }, []);
 
   const loadOrders = useCallback(async () => {
@@ -101,9 +122,10 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     loadProducts();
     loadPosts();
+    loadPartners();
     loadOrders();
     loadStats();
-  }, [loadProducts, loadPosts, loadOrders, loadStats]);
+  }, [loadProducts, loadPosts, loadPartners, loadOrders, loadStats]);
 
   async function handleLogout() {
     await fetch("/api/admin/logout", { method: "POST" });
@@ -285,6 +307,74 @@ export default function AdminDashboardPage() {
     const res = await fetch(`/api/posts/${id}`, { method: "DELETE" });
     if (res.ok) {
       await loadPosts();
+    } else {
+      const data = await res.json();
+      alert(data.error || "削除に失敗しました");
+    }
+  }
+
+  // --- 取引先 ---
+
+  function startEditPartner(p: Partner) {
+    setEditingPartnerId(p.id);
+    setPartnerForm({
+      name: p.name,
+      is_active: p.is_active,
+    });
+    setPartnerError(null);
+  }
+
+  function cancelEditPartner() {
+    setEditingPartnerId(null);
+    setPartnerForm(emptyPartnerForm);
+    setPartnerError(null);
+  }
+
+  async function handlePartnerSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setPartnerError(null);
+
+    if (!partnerForm.name.trim()) {
+      setPartnerError("店舗名を入力してください");
+      return;
+    }
+
+    setSavingPartner(true);
+    try {
+      const payload = {
+        name: partnerForm.name.trim(),
+        is_active: partnerForm.is_active,
+      };
+
+      const res = editingPartnerId
+        ? await fetch(`/api/partners/${editingPartnerId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          })
+        : await fetch("/api/partners", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "保存に失敗しました");
+
+      cancelEditPartner();
+      await loadPartners();
+    } catch (err) {
+      setPartnerError(err instanceof Error ? err.message : "エラーが発生しました");
+    } finally {
+      setSavingPartner(false);
+    }
+  }
+
+  async function handleDeletePartner(id: string) {
+    if (!confirm("この取引先を削除しますか?")) return;
+    const res = await fetch(`/api/partners/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      await loadPartners();
     } else {
       const data = await res.json();
       alert(data.error || "削除に失敗しました");
@@ -552,6 +642,70 @@ export default function AdminDashboardPage() {
                   編集
                 </button>
                 <button className="btn btn-danger" onClick={() => handleDeletePost(p.id)}>
+                  削除
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* 取引先管理 */}
+      <div className="admin-section">
+        <h2>{editingPartnerId ? "取引先を編集" : "取引先を追加"}</h2>
+        <form onSubmit={handlePartnerSubmit}>
+          <div className="field">
+            <label>店舗名</label>
+            <input
+              value={partnerForm.name}
+              onChange={(e) => setPartnerForm((f) => ({ ...f, name: e.target.value }))}
+            />
+          </div>
+          <div className="checkbox-row">
+            <input
+              id="partner_is_active"
+              type="checkbox"
+              checked={partnerForm.is_active}
+              onChange={(e) => setPartnerForm((f) => ({ ...f, is_active: e.target.checked }))}
+            />
+            <label htmlFor="partner_is_active">STOCKISTSページに公開する</label>
+          </div>
+
+          {partnerError && <p className="error-text">{partnerError}</p>}
+
+          <div className="row">
+            <button className="btn btn-primary" type="submit" disabled={savingPartner}>
+              {savingPartner ? "保存中..." : editingPartnerId ? "更新する" : "追加する"}
+            </button>
+            {editingPartnerId && (
+              <button type="button" className="btn btn-secondary" onClick={cancelEditPartner}>
+                キャンセル
+              </button>
+            )}
+          </div>
+        </form>
+      </div>
+
+      <div className="admin-section">
+        <h2>取引先一覧</h2>
+        {loadingPartners ? (
+          <p>読み込み中...</p>
+        ) : partners.length === 0 ? (
+          <p className="hint">まだ取引先がありません。</p>
+        ) : (
+          <div>
+            {partners.map((p) => (
+              <div className="admin-product-row" key={p.id}>
+                <div />
+                <div>{p.name}</div>
+                <div />
+                <span className={`badge ${p.is_active ? "badge-active" : ""}`}>
+                  {p.is_active ? "公開中" : "非公開"}
+                </span>
+                <button className="btn btn-secondary" onClick={() => startEditPartner(p)}>
+                  編集
+                </button>
+                <button className="btn btn-danger" onClick={() => handleDeletePartner(p.id)}>
                   削除
                 </button>
               </div>

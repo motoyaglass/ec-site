@@ -60,3 +60,11 @@ create table if not exists page_views (
 );
 
 create index if not exists page_views_created_at_idx on page_views (created_at);
+
+-- 取引先(取扱店)テーブル
+create table if not exists partners (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now()
+);

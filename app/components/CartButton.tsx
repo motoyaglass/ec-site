@@ -7,7 +7,7 @@ export default function CartButton() {
   const { totalCount } = useCart();
 
   return (
-    <Link href="/cart" className="cart-button" aria-label="カートを見る">
+    <Link href="/cart" className="cart-button" aria-label="買物籠を見る">
       <svg
         width="20"
         height="20"

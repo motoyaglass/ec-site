@@ -550,6 +550,24 @@ main {
 }
 
 /* Blog */
+.partner-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.partner-list-item {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 15px;
+}
+
+.partner-list-item:last-child {
+  border-bottom: none;
+}
+
 .post-list {
   display: flex;
   flex-direction: column;

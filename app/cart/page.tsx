@@ -38,11 +38,11 @@ export default function CartPage() {
 
   return (
     <div>
-      <h1 className="page-title">Cart</h1>
+      <h1 className="page-title">買物籠</h1>
 
       {items.length === 0 ? (
         <div className="empty-state">
-          カートに商品がありません。
+          買物籠に商品がありません。
           <br />
           <Link href="/" style={{ textDecoration: "underline" }}>
             ショップへ戻る

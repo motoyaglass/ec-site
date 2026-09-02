@@ -53,6 +53,13 @@ export type OrderItem = {
   quantity: number;
 };
 
+export type Partner = {
+  id: string;
+  name: string;
+  is_active: boolean;
+  created_at: string;
+};
+
 export type Order = {
   id: string;
   stripe_session_id: string;
