@@ -1,9 +1,18 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import type { Product, Post, Order } from "@/lib/db";
 import RichTextEditor from "../../components/RichTextEditor";
+
+type DailyStat = { day: string; count: number };
+type Stats = {
+  today: number;
+  last7: number;
+  last30: number;
+  total: number;
+  daily: DailyStat[];
+};
 
 const emptyProductForm = {
   name: "",
@@ -45,6 +54,10 @@ export default function AdminDashboardPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
 
+  // アクセス状況
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [loadingStats, setLoadingStats] = useState(true);
+
   const loadProducts = useCallback(async () => {
     setLoadingProducts(true);
     const res = await fetch("/api/products?all=1");
@@ -69,11 +82,28 @@ export default function AdminDashboardPage() {
     setLoadingOrders(false);
   }, []);
 
+  const loadStats = useCallback(async () => {
+    setLoadingStats(true);
+    try {
+      const res = await fetch("/api/stats");
+      const data = await res.json();
+      if (res.ok) setStats(data);
+    } finally {
+      setLoadingStats(false);
+    }
+  }, []);
+
+  const maxDaily = useMemo(
+    () => Math.max(1, ...(stats?.daily.map((d) => d.count) ?? [0])),
+    [stats]
+  );
+
   useEffect(() => {
     loadProducts();
     loadPosts();
     loadOrders();
-  }, [loadProducts, loadPosts, loadOrders]);
+    loadStats();
+  }, [loadProducts, loadPosts, loadOrders, loadStats]);
 
   async function handleLogout() {
     await fetch("/api/admin/logout", { method: "POST" });
@@ -270,6 +300,56 @@ export default function AdminDashboardPage() {
         <button className="btn btn-secondary" onClick={handleLogout}>
           ログアウト
         </button>
+      </div>
+
+      {/* アクセス状況 */}
+      <div className="admin-section">
+        <h2>アクセス状況</h2>
+        {loadingStats ? (
+          <p>読み込み中...</p>
+        ) : !stats ? (
+          <p className="hint">アクセス状況を取得できませんでした。</p>
+        ) : (
+          <>
+            <div className="stats-grid">
+              <div className="stat-card">
+                <div className="stat-value">{stats.today}</div>
+                <div className="stat-label">本日</div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-value">{stats.last7}</div>
+                <div className="stat-label">過去7日</div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-value">{stats.last30}</div>
+                <div className="stat-label">過去30日</div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-value">{stats.total}</div>
+                <div className="stat-label">累計</div>
+              </div>
+            </div>
+            {stats.daily.length > 0 && (
+              <div className="stats-daily">
+                {stats.daily.map((d) => (
+                  <div className="stats-daily-row" key={d.day}>
+                    <span className="stats-daily-date">{d.day.slice(5)}</span>
+                    <div className="stats-daily-bar-track">
+                      <div
+                        className="stats-daily-bar"
+                        style={{ width: `${(d.count / maxDaily) * 100}%` }}
+                      />
+                    </div>
+                    <span className="stats-daily-count">{d.count}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <p className="hint">
+              ページを開いた回数(閲覧数)を記録しています。管理画面へのアクセスは含みません。
+            </p>
+          </>
+        )}
       </div>
 
       {/* 商品管理 */}

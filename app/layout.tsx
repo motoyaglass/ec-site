@@ -4,6 +4,7 @@ import Logo from "./components/Logo";
 import BottomSwitcher from "./components/BottomSwitcher";
 import CartButton from "./components/CartButton";
 import { CartProvider } from "./components/CartContext";
+import VisitTracker from "./components/VisitTracker";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -16,6 +17,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="ja">
       <body>
         <CartProvider>
+          <VisitTracker />
           <CartButton />
           <main>
             <Link href="/" className="site-logo-block" aria-label="工芸硝子モトヤ トップページ">

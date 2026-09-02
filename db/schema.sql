@@ -51,3 +51,12 @@ create table if not exists posts (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- アクセス状況(ページビュー)テーブル。/api/track から匿名で記録されます。
+create table if not exists page_views (
+  id bigserial primary key,
+  path text not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists page_views_created_at_idx on page_views (created_at);
