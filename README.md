@@ -54,7 +54,17 @@ stripe listen --forward-to localhost:3000/api/webhooks/stripe
 3. イベントは `checkout.session.completed` を選択
 4. 作成後に表示される「署名シークレット」を本番環境の `STRIPE_WEBHOOK_SECRET` に設定
 
-### 4. 環境変数を設定
+### 4. (任意)Cloudflare Turnstileで管理ログインのボット対策を設定
+
+管理ページのログイン画面に、Cloudflareの無料CAPTCHA代替サービス「Turnstile」を導入できます。設定しない場合もログイン機能自体は通常通り動作します(チェックが省略されるだけです)。
+
+1. https://dash.cloudflare.com/ にログイン(アカウントがない場合は無料登録)
+2. 左メニューの「Turnstile」から「Add site」でウィジェットを作成
+   - ドメインには本番ドメイン(`kougeiglassmotoya.jp`)を追加。ローカル確認もする場合は `localhost` も追加
+   - ウィジェットモードは「Managed」でOK
+3. 発行される「Site Key」を `NEXT_PUBLIC_TURNSTILE_SITE_KEY` に、「Secret Key」を `TURNSTILE_SECRET_KEY` に設定
+
+### 5. 環境変数を設定
 
 `.env.example` をコピーして `.env.local` を作成し、値を埋めてください。
 
@@ -68,8 +78,9 @@ cp .env.example .env.local
 - `STRIPE_WEBHOOK_SECRET` … 上記の手順3で取得した値
 - `NEXT_PUBLIC_SITE_URL` … ローカルでは `http://localhost:3000` のままでOK。デプロイ後は実際のURLに変更
 - `UPLOAD_DIR` … 商品画像の保存先ディレクトリ(任意)。ローカルでは空欄でOK。Railwayでの設定方法は下記「デプロイ」を参照
+- `NEXT_PUBLIC_TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET_KEY` … 上記の手順4で取得した値(任意。設定しない場合は空欄でOK)
 
-### 5. ローカルで動作確認
+### 6. ローカルで動作確認
 
 ```bash
 npm install
@@ -97,6 +108,7 @@ http://localhost:3000 でショップページ、http://localhost:3000/admin で
 11. アクセス状況を記録できるようにするため、Postgresサービスの「Data」タブ→「Query」で `db/schema.sql` の内容をもう一度実行(`page_views` テーブルが追加されます。他のテーブルは `if not exists` のため影響ありません)
 12. 取引先(取扱店)機能を使う場合も同様に `db/schema.sql` を実行してください(`partners` テーブルが追加されます)
 13. マーケティング分析(流入元・デバイス)機能を使う場合も同様に `db/schema.sql` を実行してください(`page_views` テーブルに `referrer`・`device` 列が追加されます)
+14. 管理ログインのTurnstileを使う場合は、サービスの Variables に `NEXT_PUBLIC_TURNSTILE_SITE_KEY` と `TURNSTILE_SECRET_KEY` を追加(手順4を参照)
 
 Stripeを本番稼働させる際は本番キー(`sk_live_...`)に切り替え、`NEXT_PUBLIC_SITE_URL` も本番ドメインにしてください。
 

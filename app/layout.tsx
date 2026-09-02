@@ -7,9 +7,9 @@ import "./globals.css";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://kougeiglassmotoya.jp";
 
-const siteTitle = "工芸硝子モトヤ | ガラス作家 小野資矢";
+const siteTitle = "工芸硝子モトヤ | 吹きガラス工 小野資矢";
 const siteDescription =
-  "ガラス作家・小野資矢が営む工芸硝子モトヤの公式サイト。一つひとつ手作りするガラス作品の販売と、制作の様子を綴るブログ。";
+  "吹きガラス工・小野資矢が営む工芸硝子モトヤの公式サイト。一つひとつ手作りするガラス作品の販売と、制作の様子を綴るブログ。";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

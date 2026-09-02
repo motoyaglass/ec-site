@@ -1,7 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Script from "next/script";
+
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "";
+
+declare global {
+  interface Window {
+    onTurnstileSuccess?: (token: string) => void;
+    onTurnstileExpired?: () => void;
+    turnstile?: { reset: (widgetId?: string) => void };
+  }
+}
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -9,6 +20,17 @@ export default function AdminLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState("");
+
+  useEffect(() => {
+    if (!TURNSTILE_SITE_KEY) return;
+    window.onTurnstileSuccess = (token: string) => setTurnstileToken(token);
+    window.onTurnstileExpired = () => setTurnstileToken("");
+    return () => {
+      delete window.onTurnstileSuccess;
+      delete window.onTurnstileExpired;
+    };
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -18,7 +40,7 @@ export default function AdminLoginPage() {
       const res = await fetch("/api/admin/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ password, turnstileToken }),
       });
       const data = await res.json();
       if (!res.ok || !data.ok) {
@@ -28,13 +50,22 @@ export default function AdminLoginPage() {
       router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "エラーが発生しました");
+      if (TURNSTILE_SITE_KEY) {
+        window.turnstile?.reset();
+        setTurnstileToken("");
+      }
     } finally {
       setLoading(false);
     }
   }
 
+  const submitDisabled = loading || (!!TURNSTILE_SITE_KEY && !turnstileToken);
+
   return (
     <div className="login-box">
+      {TURNSTILE_SITE_KEY && (
+        <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer />
+      )}
       <h1 className="page-title" style={{ fontSize: 20 }}>
         管理ページログイン
       </h1>
@@ -71,8 +102,17 @@ export default function AdminLoginPage() {
             </button>
           </div>
         </div>
+        {TURNSTILE_SITE_KEY && (
+          <div
+            className="cf-turnstile"
+            data-sitekey={TURNSTILE_SITE_KEY}
+            data-callback="onTurnstileSuccess"
+            data-expired-callback="onTurnstileExpired"
+            style={{ marginBottom: 14 }}
+          />
+        )}
         {error && <p className="error-text">{error}</p>}
-        <button className="btn btn-primary" type="submit" disabled={loading} style={{ width: "100%" }}>
+        <button className="btn btn-primary" type="submit" disabled={submitDisabled} style={{ width: "100%" }}>
           {loading ? "確認中..." : "ログイン"}
         </button>
       </form>
