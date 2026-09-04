@@ -680,14 +680,6 @@ export default function AdminDashboardPage() {
             />
           </div>
           <div className="field">
-            <label>カバー画像URL(任意)</label>
-            <input
-              value={postForm.cover_image_url}
-              onChange={(e) => setPostForm((f) => ({ ...f, cover_image_url: e.target.value }))}
-              placeholder="https://..."
-            />
-          </div>
-          <div className="field">
             <label>本文</label>
             <RichTextEditor
               value={postForm.content}
@@ -729,12 +721,7 @@ export default function AdminDashboardPage() {
           <div>
             {posts.map((p) => (
               <div className="admin-product-row" key={p.id}>
-                {p.cover_image_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={p.cover_image_url} alt={p.title} className="admin-thumb" />
-                ) : (
-                  <div className="admin-thumb" />
-                )}
+                <div />
                 <div>{p.title}</div>
                 <div />
                 <span className={`badge ${p.is_published ? "badge-active" : ""}`}>

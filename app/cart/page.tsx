@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useCart } from "../components/CartContext";
+import { SHIPPING_REGIONS, FREE_SHIPPING_THRESHOLD, calculateShippingFee } from "@/lib/shipping";
 
 function formatPrice(yen: number) {
   return `¥${yen.toLocaleString("ja-JP")}`;
@@ -12,8 +13,19 @@ export default function CartPage() {
   const { items, totalPrice, removeItem, updateQuantity } = useCart();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [regionId, setRegionId] = useState("");
+
+  const freeShipping = totalPrice >= FREE_SHIPPING_THRESHOLD;
+  const shippingFee = useMemo(
+    () => (regionId ? calculateShippingFee(totalPrice, regionId) : null),
+    [totalPrice, regionId]
+  );
 
   async function handleCheckout() {
+    if (!regionId) {
+      setError("お届け先の地域を選択してください");
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -22,6 +34,7 @@ export default function CartPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           items: items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+          region: regionId,
         }),
       });
       const data = await res.json();
@@ -87,8 +100,36 @@ export default function CartPage() {
             ))}
           </div>
 
+          <div className="field">
+            <label htmlFor="shipping-region">お届け先の地域</label>
+            <select
+              id="shipping-region"
+              value={regionId}
+              onChange={(e) => setRegionId(e.target.value)}
+            >
+              <option value="">選択してください</option>
+              {SHIPPING_REGIONS.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {freeShipping ? (
+            <p className="hint">
+              {FREE_SHIPPING_THRESHOLD.toLocaleString("ja-JP")}円以上のご購入のため送料無料です。
+            </p>
+          ) : (
+            regionId && (
+              <p className="hint">
+                送料: {formatPrice(shippingFee ?? 0)}(ゆうパック・沖縄発)
+              </p>
+            )
+          )}
+
           <div className="cart-total">
-            <span>合計</span>
+            <span>商品合計</span>
             <span>{formatPrice(totalPrice)}</span>
           </div>
 

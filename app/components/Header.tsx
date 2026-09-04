@@ -13,6 +13,10 @@ export default function Header() {
   const isStockists = pathname.startsWith("/stockists");
   const isCart = pathname.startsWith("/cart");
 
+  if (pathname.startsWith("/admin")) {
+    return null;
+  }
+
   return (
     <header className="site-header">
       <Link href="/" className="site-logo-block" aria-label="工芸硝子モトヤ トップページ">

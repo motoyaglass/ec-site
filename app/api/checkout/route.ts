@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { query, Product } from "@/lib/db";
+import { calculateShippingFee, getShippingRegion, FREE_SHIPPING_THRESHOLD } from "@/lib/shipping";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,12 @@ export async function POST(req: NextRequest) {
       { error: "STRIPE_SECRET_KEY が設定されていません" },
       { status: 500 }
     );
+  }
+
+  const regionId = String(body?.region ?? "");
+  const region = getShippingRegion(regionId);
+  if (!region) {
+    return NextResponse.json({ error: "お届け先の地域を選択してください" }, { status: 400 });
   }
 
   const normalized: CheckoutItem[] = rawItems
@@ -46,6 +53,7 @@ export async function POST(req: NextRequest) {
 
   const productMap = new Map(products.map((p) => [p.id, p]));
   const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
+  let subtotal = 0;
 
   for (const item of normalized) {
     const product = productMap.get(item.productId);
@@ -58,6 +66,7 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+    subtotal += product.price * item.quantity;
     lineItems.push({
       price_data: {
         currency: "jpy",
@@ -70,6 +79,21 @@ export async function POST(req: NextRequest) {
       quantity: item.quantity,
     });
   }
+
+  // 送料。2万円以上のご購入は無料、それ以外は沖縄発ゆうパックの地域別運賃。
+  // 商品と同じ line_items 配列の末尾に追加する(先頭に追加するとWebhook側の
+  // 商品ID対応付けがズレるため、必ず末尾に追加すること)。
+  const shippingFee = calculateShippingFee(subtotal, regionId);
+  lineItems.push({
+    price_data: {
+      currency: "jpy",
+      product_data: {
+        name: shippingFee === 0 ? `送料無料(${FREE_SHIPPING_THRESHOLD.toLocaleString("ja-JP")}円以上ご購入)` : `送料(${region.label})`,
+      },
+      unit_amount: shippingFee,
+    },
+    quantity: 1,
+  });
 
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 

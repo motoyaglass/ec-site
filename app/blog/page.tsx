@@ -1,6 +1,9 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { query, Post } from "@/lib/db";
+import { verifyBlogAccessCookie } from "@/lib/blogAccess";
+import BlogAccessGate from "../components/BlogAccessGate";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +33,18 @@ function excerpt(html: string, max = 90) {
   return text.length > max ? `${text.slice(0, max)}…` : text;
 }
 
-export default async function BlogListPage() {
+export default async function BlogListPage({
+  searchParams,
+}: {
+  searchParams: { blogAccessError?: string };
+}) {
+  const cookieStore = cookies();
+  const verified = verifyBlogAccessCookie(cookieStore.get("blog_access")?.value);
+
+  if (!verified) {
+    return <BlogAccessGate redirectTo="/blog" error={searchParams?.blogAccessError} />;
+  }
+
   const posts = await getPosts();
 
   return (
@@ -41,12 +55,6 @@ export default async function BlogListPage() {
         <div className="post-list">
           {posts.map((p) => (
             <div className="post-list-item" key={p.id}>
-              {p.cover_image_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={p.cover_image_url} alt={p.title} className="post-thumb" />
-              ) : (
-                <div className="post-thumb-placeholder" />
-              )}
               <div className="post-list-body">
                 <Link href={`/blog/${p.id}`} className="post-title">
                   {p.title}
@@ -58,6 +66,9 @@ export default async function BlogListPage() {
           ))}
         </div>
       )}
+      <p className="hint" style={{ marginTop: 24 }}>
+        <a href="/api/blog-access/logout">別のメールアドレスで確認し直す</a>
+      </p>
     </div>
   );
 }

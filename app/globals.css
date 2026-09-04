@@ -358,13 +358,16 @@ main {
 }
 
 .field input,
-.field textarea {
+.field textarea,
+.field select {
   border: 1px solid var(--border);
   border-radius: 0;
   padding: 9px 12px;
   font-size: 14px;
   font-family: inherit;
   width: 100%;
+  background: var(--card-bg);
+  color: var(--fg);
 }
 
 .field textarea {
@@ -722,6 +725,15 @@ main {
   object-fit: cover;
   border-radius: var(--radius);
   margin-bottom: 24px;
+}
+
+.ig-share {
+  margin-bottom: 32px;
+}
+
+.ig-share-message {
+  margin-top: 8px;
+  margin-bottom: 0;
 }
 
 .post-content {

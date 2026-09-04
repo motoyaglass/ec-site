@@ -1,11 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query, Post } from "@/lib/db";
+import { verifyBlogAccessCookie } from "@/lib/blogAccess";
 
 export const dynamic = "force-dynamic";
 
 // 一覧取得。管理画面用に ?all=1 で非公開記事も含めて返す。公開ページ用はデフォルトで公開記事のみ。
+// 日誌はサイト経由の購入者限定のため、?all=1 が無い場合は閲覧用Cookieが必要。
 export async function GET(req: NextRequest) {
   const all = req.nextUrl.searchParams.get("all");
+
+  if (!all) {
+    const verified = verifyBlogAccessCookie(req.cookies.get("blog_access")?.value);
+    if (!verified) {
+      return NextResponse.json({ posts: [] }, { status: 403 });
+    }
+  }
 
   try {
     const sql = all
