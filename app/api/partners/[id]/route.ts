@@ -18,6 +18,10 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     fields.push(`name = $${i++}`);
     values.push(body.name.trim());
   }
+  if (typeof body.address === "string" || body.address === null) {
+    fields.push(`address = $${i++}`);
+    values.push(body.address ? body.address.trim() || null : null);
+  }
   if (typeof body.is_active === "boolean") {
     fields.push(`is_active = $${i++}`);
     values.push(body.is_active);

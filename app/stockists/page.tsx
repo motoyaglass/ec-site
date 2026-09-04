@@ -30,7 +30,8 @@ export default async function StockistsPage() {
         <ul className="partner-list">
           {partners.map((p) => (
             <li className="partner-list-item" key={p.id}>
-              {p.name}
+              <div>{p.name}</div>
+              {p.address && <div className="partner-address">{p.address}</div>}
             </li>
           ))}
         </ul>

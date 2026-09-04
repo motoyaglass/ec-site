@@ -47,6 +47,7 @@ const emptyPostForm = {
 
 const emptyPartnerForm = {
   name: "",
+  address: "",
   is_active: true,
 };
 
@@ -349,6 +350,7 @@ export default function AdminDashboardPage() {
     setEditingPartnerId(p.id);
     setPartnerForm({
       name: p.name,
+      address: p.address ?? "",
       is_active: p.is_active,
     });
     setPartnerError(null);
@@ -373,6 +375,7 @@ export default function AdminDashboardPage() {
     try {
       const payload = {
         name: partnerForm.name.trim(),
+        address: partnerForm.address.trim() || null,
         is_active: partnerForm.is_active,
       };
 
@@ -750,6 +753,13 @@ export default function AdminDashboardPage() {
               onChange={(e) => setPartnerForm((f) => ({ ...f, name: e.target.value }))}
             />
           </div>
+          <div className="field">
+            <label>住所(任意)</label>
+            <input
+              value={partnerForm.address}
+              onChange={(e) => setPartnerForm((f) => ({ ...f, address: e.target.value }))}
+            />
+          </div>
           <div className="checkbox-row">
             <input
               id="partner_is_active"
@@ -786,7 +796,10 @@ export default function AdminDashboardPage() {
             {partners.map((p) => (
               <div className="admin-product-row" key={p.id}>
                 <div />
-                <div>{p.name}</div>
+                <div>
+                  {p.name}
+                  {p.address && <div className="hint">{p.address}</div>}
+                </div>
                 <div />
                 <span className={`badge ${p.is_active ? "badge-active" : ""}`}>
                   {p.is_active ? "公開中" : "非公開"}

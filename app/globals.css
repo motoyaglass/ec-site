@@ -644,6 +644,12 @@ main {
   border-bottom: none;
 }
 
+.partner-address {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
 .post-list {
   display: flex;
   flex-direction: column;

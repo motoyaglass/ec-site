@@ -27,10 +27,10 @@ export async function POST(req: NextRequest) {
 
   try {
     const partners = await query<Partner>(
-      `insert into partners (name, is_active)
-       values ($1, $2)
+      `insert into partners (name, address, is_active)
+       values ($1, $2, $3)
        returning *`,
-      [body.name.trim(), body.is_active ?? true]
+      [body.name.trim(), typeof body.address === "string" ? body.address.trim() || null : null, body.is_active ?? true]
     );
     return NextResponse.json({ partner: partners[0] });
   } catch (err) {

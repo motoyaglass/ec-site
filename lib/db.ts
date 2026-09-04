@@ -56,6 +56,7 @@ export type OrderItem = {
 export type Partner = {
   id: string;
   name: string;
+  address: string | null;
   is_active: boolean;
   created_at: string;
 };

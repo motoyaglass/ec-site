@@ -71,6 +71,10 @@ create index if not exists page_views_created_at_idx on page_views (created_at);
 create table if not exists partners (
   id uuid primary key default gen_random_uuid(),
   name text not null,
+  address text,
   is_active boolean not null default true,
   created_at timestamptz not null default now()
 );
+
+-- 既存環境向け(テーブルが既にある場合に列を追加)
+alter table partners add column if not exists address text;
