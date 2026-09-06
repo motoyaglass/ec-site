@@ -9,6 +9,7 @@ type HourRow = { hour: string; count: string };
 type PathRow = { path: string; count: string };
 type SourceRow = { source: string; count: string };
 type DeviceRow = { device: string; count: string };
+type PostViewRow = { path: string; count: string };
 
 // 管理画面用のアクセス状況集計。middleware側で管理者ログインを必須にしています。
 export async function GET() {
@@ -23,6 +24,7 @@ export async function GET() {
       topPaths,
       sources,
       devices,
+      postViews,
     ] = await Promise.all([
       query<CountRow>(
         "select count(*)::text as count from page_views where created_at >= date_trunc('day', now())"
@@ -82,6 +84,13 @@ export async function GET() {
          group by 1
          order by count(*) desc`
       ),
+      // 日誌記事ごとの累計閲覧数(/blog/{id} パスを集計)
+      query<PostViewRow>(
+        `select path, count(*)::text as count
+         from page_views
+         where path like '/blog/%'
+         group by 1`
+      ),
     ]);
 
     const hourMap = new Map(hourly.map((h) => [h.hour, Number(h.count)]));
@@ -100,6 +109,10 @@ export async function GET() {
       topPaths: topPaths.map((p) => ({ path: p.path, count: Number(p.count) })),
       sources: sources.map((s) => ({ source: s.source, count: Number(s.count) })),
       devices: devices.map((d) => ({ device: d.device, count: Number(d.count) })),
+      postViews: postViews.map((p) => ({
+        postId: p.path.replace("/blog/", ""),
+        count: Number(p.count),
+      })),
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "failed to load stats";

@@ -27,6 +27,10 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     fields.push(`is_published = $${i++}`);
     values.push(body.is_published);
   }
+  if (typeof body.is_free === "boolean") {
+    fields.push(`is_free = $${i++}`);
+    values.push(body.is_free);
+  }
 
   values.push(params.id);
 

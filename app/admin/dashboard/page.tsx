@@ -10,6 +10,7 @@ type HourlyStat = { hour: string; count: number };
 type PathStat = { path: string; count: number };
 type SourceStat = { source: string; count: number };
 type DeviceStat = { device: string; count: number };
+type PostViewStat = { postId: string; count: number };
 type Stats = {
   today: number;
   last7: number;
@@ -20,6 +21,7 @@ type Stats = {
   topPaths: PathStat[];
   sources: SourceStat[];
   devices: DeviceStat[];
+  postViews: PostViewStat[];
 };
 
 const deviceLabel: Record<string, string> = {
@@ -43,6 +45,7 @@ const emptyPostForm = {
   content: "",
   cover_image_url: "",
   is_published: true,
+  is_free: false,
 };
 
 const emptyPartnerForm = {
@@ -149,6 +152,14 @@ export default function AdminDashboardPage() {
     () => Math.max(1, (stats?.devices ?? []).reduce((sum, d) => sum + d.count, 0)),
     [stats]
   );
+
+  const postViewMap = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const v of stats?.postViews ?? []) {
+      map.set(v.postId, v.count);
+    }
+    return map;
+  }, [stats]);
 
   useEffect(() => {
     loadProducts();
@@ -281,6 +292,7 @@ export default function AdminDashboardPage() {
       content: p.content ?? "",
       cover_image_url: p.cover_image_url ?? "",
       is_published: p.is_published,
+      is_free: p.is_free,
     });
     setPostError(null);
   }
@@ -307,6 +319,7 @@ export default function AdminDashboardPage() {
         content: postForm.content,
         cover_image_url: postForm.cover_image_url.trim() || null,
         is_published: postForm.is_published,
+        is_free: postForm.is_free,
       };
 
       const res = editingPostId
@@ -698,6 +711,15 @@ export default function AdminDashboardPage() {
             />
             <label htmlFor="is_published">ブログに公開する</label>
           </div>
+          <div className="checkbox-row">
+            <input
+              id="is_free"
+              type="checkbox"
+              checked={postForm.is_free}
+              onChange={(e) => setPostForm((f) => ({ ...f, is_free: e.target.checked }))}
+            />
+            <label htmlFor="is_free">無料記事にする(チェックなしは購入者限定)</label>
+          </div>
 
           {postError && <p className="error-text">{postError}</p>}
 
@@ -725,8 +747,13 @@ export default function AdminDashboardPage() {
             {posts.map((p) => (
               <div className="admin-product-row" key={p.id}>
                 <div />
-                <div>{p.title}</div>
-                <div />
+                <div>
+                  {p.title}
+                  <div className="hint">閲覧数: {postViewMap.get(p.id) ?? 0}</div>
+                </div>
+                <span className={`badge ${p.is_free ? "" : "badge-active"}`}>
+                  {p.is_free ? "無料" : "購入者限定"}
+                </span>
                 <span className={`badge ${p.is_published ? "badge-active" : ""}`}>
                   {p.is_published ? "公開中" : "非公開"}
                 </span>

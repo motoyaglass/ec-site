@@ -57,17 +57,19 @@ export default async function BlogDetailPage({
   params: { id: string };
   searchParams: { blogAccessError?: string };
 }) {
-  const cookieStore = cookies();
-  const verified = verifyBlogAccessCookie(cookieStore.get("blog_access")?.value);
-
-  if (!verified) {
-    return <BlogAccessGate redirectTo={`/blog/${params.id}`} error={searchParams?.blogAccessError} />;
-  }
-
   const post = await getPost(params.id);
 
   if (!post) {
     notFound();
+  }
+
+  if (!post.is_free) {
+    const cookieStore = cookies();
+    const verified = verifyBlogAccessCookie(cookieStore.get("blog_access")?.value);
+
+    if (!verified) {
+      return <BlogAccessGate redirectTo={`/blog/${params.id}`} error={searchParams?.blogAccessError} />;
+    }
   }
 
   return (

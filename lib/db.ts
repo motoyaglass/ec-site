@@ -42,6 +42,7 @@ export type Post = {
   content: string; // リッチテキストエディタで生成されたHTML
   cover_image_url: string | null;
   is_published: boolean;
+  is_free: boolean; // true: 誰でも閲覧可, false: サイト購入者限定
   created_at: string;
   updated_at: string;
 };

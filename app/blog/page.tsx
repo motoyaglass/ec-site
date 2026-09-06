@@ -13,11 +13,12 @@ export const metadata: Metadata = {
     "吹きガラス工・小野資矢による工芸硝子モトヤの制作日記。ガラス作品づくりの様子やお知らせを綴っています。",
 };
 
-async function getPosts(): Promise<Post[]> {
+async function getPosts(verified: boolean): Promise<Post[]> {
   try {
-    return await query<Post>(
-      "select * from posts where is_published = true order by created_at desc"
-    );
+    const sql = verified
+      ? "select * from posts where is_published = true order by created_at desc"
+      : "select * from posts where is_published = true and is_free = true order by created_at desc";
+    return await query<Post>(sql);
   } catch (err) {
     console.error(err);
     return [];
@@ -41,11 +42,7 @@ export default async function BlogListPage({
   const cookieStore = cookies();
   const verified = verifyBlogAccessCookie(cookieStore.get("blog_access")?.value);
 
-  if (!verified) {
-    return <BlogAccessGate redirectTo="/blog" error={searchParams?.blogAccessError} />;
-  }
-
-  const posts = await getPosts();
+  const posts = await getPosts(verified);
 
   return (
     <div>
@@ -59,6 +56,7 @@ export default async function BlogListPage({
                 <Link href={`/blog/${p.id}`} className="post-title">
                   {p.title}
                 </Link>
+                {!p.is_free && <span className="badge" style={{ marginLeft: 8 }}>購入者限定</span>}
                 <p className="post-date">{formatDate(p.created_at)}</p>
                 <p className="post-excerpt">{excerpt(p.content)}</p>
               </div>
@@ -66,9 +64,19 @@ export default async function BlogListPage({
           ))}
         </div>
       )}
-      <p className="hint" style={{ marginTop: 24 }}>
-        <a href="/api/blog-access/logout">別のメールアドレスで確認し直す</a>
-      </p>
+
+      {verified ? (
+        <p className="hint" style={{ marginTop: 24 }}>
+          <a href="/api/blog-access/logout">別のメールアドレスで確認し直す</a>
+        </p>
+      ) : (
+        <div style={{ marginTop: 32 }}>
+          <p className="hint" style={{ marginBottom: 12 }}>
+            ご購入者の方は、メールアドレスを確認すると購入者限定の記事もあわせて読めます。
+          </p>
+          <BlogAccessGate redirectTo="/blog" error={searchParams?.blogAccessError} />
+        </div>
+      )}
     </div>
   );
 }

@@ -48,9 +48,13 @@ create table if not exists posts (
   content text not null default '',    -- リッチテキストエディタが生成するHTML
   cover_image_url text,
   is_published boolean not null default true,
+  is_free boolean not null default false,  -- true: 誰でも閲覧可, false: サイト購入者限定
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- 既存環境向け(テーブルが既にある場合に列を追加)
+alter table posts add column if not exists is_free boolean not null default false;
 
 -- アクセス状況(ページビュー)テーブル。/api/track から匿名で記録されます。
 create table if not exists page_views (
