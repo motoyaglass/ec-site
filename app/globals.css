@@ -697,6 +697,14 @@ main {
   display: block;
 }
 
+.post-title-large {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0;
+  text-decoration: none;
+  display: inline-block;
+}
+
 .post-date {
   font-size: 12px;
   color: var(--muted);
@@ -886,6 +894,10 @@ main {
   .post-thumb-placeholder {
     width: 84px;
     height: 84px;
+  }
+
+  .post-title-large {
+    font-size: 19px;
   }
 
   .cart-row {

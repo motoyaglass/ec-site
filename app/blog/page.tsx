@@ -13,25 +13,15 @@ export const metadata: Metadata = {
     "吹きガラス工・小野資矢による工芸硝子モトヤの制作日記。ガラス作品づくりの様子やお知らせを綴っています。",
 };
 
-async function getPosts(verified: boolean): Promise<Post[]> {
+async function getPosts(): Promise<Post[]> {
   try {
-    const sql = verified
-      ? "select * from posts where is_published = true order by created_at desc"
-      : "select * from posts where is_published = true and is_free = true order by created_at desc";
-    return await query<Post>(sql);
+    return await query<Post>(
+      "select * from posts where is_published = true order by created_at desc"
+    );
   } catch (err) {
     console.error(err);
     return [];
   }
-}
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("ja-JP", { year: "numeric", month: "long", day: "numeric" });
-}
-
-function excerpt(html: string, max = 90) {
-  const text = html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
-  return text.length > max ? `${text.slice(0, max)}…` : text;
 }
 
 export default async function BlogListPage({
@@ -42,7 +32,7 @@ export default async function BlogListPage({
   const cookieStore = cookies();
   const verified = verifyBlogAccessCookie(cookieStore.get("blog_access")?.value);
 
-  const posts = await getPosts(verified);
+  const posts = await getPosts();
 
   return (
     <div>
@@ -52,14 +42,10 @@ export default async function BlogListPage({
         <div className="post-list">
           {posts.map((p) => (
             <div className="post-list-item" key={p.id}>
-              <div className="post-list-body">
-                <Link href={`/blog/${p.id}`} className="post-title">
-                  {p.title}
-                </Link>
-                {!p.is_free && <span className="badge" style={{ marginLeft: 8 }}>購入者限定</span>}
-                <p className="post-date">{formatDate(p.created_at)}</p>
-                <p className="post-excerpt">{excerpt(p.content)}</p>
-              </div>
+              <Link href={`/blog/${p.id}`} className="post-title-large">
+                {p.title}
+              </Link>
+              {!p.is_free && <span className="badge" style={{ marginLeft: 8 }}>購入者限定</span>}
             </div>
           ))}
         </div>

@@ -153,14 +153,6 @@ export default function AdminDashboardPage() {
     [stats]
   );
 
-  const postViewMap = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const v of stats?.postViews ?? []) {
-      map.set(v.postId, v.count);
-    }
-    return map;
-  }, [stats]);
-
   useEffect(() => {
     loadProducts();
     loadPosts();
@@ -747,10 +739,7 @@ export default function AdminDashboardPage() {
             {posts.map((p) => (
               <div className="admin-product-row" key={p.id}>
                 <div />
-                <div>
-                  {p.title}
-                  <div className="hint">閲覧数: {postViewMap.get(p.id) ?? 0}</div>
-                </div>
+                <div>{p.title}</div>
                 <span className={`badge ${p.is_free ? "" : "badge-active"}`}>
                   {p.is_free ? "無料" : "購入者限定"}
                 </span>
