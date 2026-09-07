@@ -4,6 +4,40 @@ import ClearCartOnSuccess from "./components/ClearCartOnSuccess";
 
 export const dynamic = "force-dynamic";
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://kougeiglassmotoya.jp";
+
+function absoluteUrl(path: string) {
+  return path.startsWith("http") ? path : `${siteUrl}${path}`;
+}
+
+function buildProductsJsonLd(products: Product[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    itemListElement: products.map((p, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      item: {
+        "@type": "Product",
+        name: p.name,
+        description: p.description || undefined,
+        image: p.image_url ? absoluteUrl(p.image_url) : undefined,
+        url: siteUrl,
+        offers: {
+          "@type": "Offer",
+          priceCurrency: "JPY",
+          price: p.price,
+          availability:
+            p.stock_quantity > 0
+              ? "https://schema.org/InStock"
+              : "https://schema.org/OutOfStock",
+          url: siteUrl,
+        },
+      },
+    })),
+  };
+}
+
 async function getProducts(): Promise<Product[]> {
   try {
     return await query<Product>(
@@ -28,6 +62,12 @@ export default async function ShopPage({
 
   return (
     <div>
+      {products.length > 0 && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(buildProductsJsonLd(products)) }}
+        />
+      )}
       <ClearCartOnSuccess success={searchParams.checkout === "success"} />
 
       {searchParams.checkout === "success" && (

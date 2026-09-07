@@ -35,6 +35,15 @@ export async function generateMetadata({
 
   const description = excerpt(post.content);
 
+  // 購入者限定記事は内容を閲覧できないユーザー向けに表示されてしまうため、
+  // 検索エンジンにはインデックスさせない。
+  if (!post.is_free) {
+    return {
+      title: post.title,
+      robots: { index: false, follow: false },
+    };
+  }
+
   return {
     title: post.title,
     description,
@@ -42,6 +51,7 @@ export async function generateMetadata({
       title: post.title,
       description,
       type: "article",
+      publishedTime: post.created_at,
     },
   };
 }
@@ -72,8 +82,28 @@ export default async function BlogDetailPage({
     }
   }
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://kougeiglassmotoya.jp";
+  const jsonLd = post.is_free
+    ? {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        headline: post.title,
+        datePublished: post.created_at,
+        dateModified: post.updated_at,
+        author: { "@type": "Person", name: "小野資矢" },
+        publisher: { "@type": "Organization", name: "工芸硝子モトヤ" },
+        mainEntityOfPage: `${siteUrl}/blog/${post.id}`,
+      }
+    : null;
+
   return (
     <article>
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      )}
       <h1 className="post-detail-title">{post.title}</h1>
       <p className="post-detail-date">{formatDate(post.created_at)}</p>
       <ShareToInstagramButton title={post.title} coverImageUrl={null} />
