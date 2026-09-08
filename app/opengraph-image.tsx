@@ -3,6 +3,9 @@ import fs from "fs";
 import path from "path";
 
 export const runtime = "nodejs";
+// ビルドコンテナには外部ネットワークアクセスが無く、フォント取得(Google Fonts)が
+// ビルド時に失敗してしまうため、リクエスト時に生成するようにする。
+export const dynamic = "force-dynamic";
 export const alt = "工芸硝子モトヤ | 吹きガラス工 小野資矢";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
@@ -39,6 +42,9 @@ export default async function Image() {
   const text = "工芸硝子モトヤ吹きガラス工小野資矢";
   const fontData = await loadJapaneseFont(text);
 
+  // フォント取得に失敗した場合、テキストなし(ロゴ画像のみ)にフォールバックする。
+  // Satoriはテキストを1文字でも描画する場合フォント指定が必須なため、
+  // フォントが無い場合はテキストごと諦めてビルド/配信を壊さないようにする。
   return new ImageResponse(
     (
       <div
@@ -53,11 +59,17 @@ export default async function Image() {
         }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={logoBase64} width={360} height={269} style={{ objectFit: "contain" }} />
-        <div style={{ marginTop: 36, fontSize: 44, fontWeight: 700, color: "#1f1f1f" }}>
-          工芸硝子モトヤ
-        </div>
-        <div style={{ marginTop: 14, fontSize: 24, color: "#6b6b6b" }}>吹きガラス工 小野資矢</div>
+        <img src={logoBase64} width={480} height={358} style={{ objectFit: "contain" }} />
+        {fontData && (
+          <>
+            <div style={{ marginTop: 36, fontSize: 44, fontWeight: 700, color: "#1f1f1f" }}>
+              工芸硝子モトヤ
+            </div>
+            <div style={{ marginTop: 14, fontSize: 24, color: "#6b6b6b" }}>
+              吹きガラス工 小野資矢
+            </div>
+          </>
+        )}
       </div>
     ),
     {

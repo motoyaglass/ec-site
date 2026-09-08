@@ -3,6 +3,10 @@ import { query, Post } from "@/lib/db";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://kougeiglassmotoya.jp";
 
+// DBを参照するため、ビルド時ではなくリクエスト時に生成する
+// (ビルドコンテナからは postgres.railway.internal に到達できないため)。
+export const dynamic = "force-dynamic";
+
 // 日誌のうち無料記事のみ検索エンジン向けのsitemapに含める。
 // 購入者限定記事はクロールさせても閲覧できないため含めない(各ページ側でnoindexも設定済み)。
 async function getFreePosts(): Promise<Post[]> {

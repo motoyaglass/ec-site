@@ -7,10 +7,10 @@ import RichTextEditor from "../../components/RichTextEditor";
 
 type DailyStat = { day: string; count: number };
 type HourlyStat = { hour: string; count: number };
-type PathStat = { path: string; count: number };
 type SourceStat = { source: string; count: number };
 type DeviceStat = { device: string; count: number };
 type PostViewStat = { postId: string; count: number };
+type ProductClickStat = { productId: string; name: string; count: number };
 type Stats = {
   today: number;
   last7: number;
@@ -18,10 +18,10 @@ type Stats = {
   total: number;
   daily: DailyStat[];
   hourly: HourlyStat[];
-  topPaths: PathStat[];
   sources: SourceStat[];
   devices: DeviceStat[];
   postViews: PostViewStat[];
+  productClicks: ProductClickStat[];
 };
 
 const deviceLabel: Record<string, string> = {
@@ -152,6 +152,14 @@ export default function AdminDashboardPage() {
     () => Math.max(1, (stats?.devices ?? []).reduce((sum, d) => sum + d.count, 0)),
     [stats]
   );
+
+  const postViewMap = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const v of stats?.postViews ?? []) {
+      map.set(v.postId, v.count);
+    }
+    return map;
+  }, [stats]);
 
   useEffect(() => {
     loadProducts();
@@ -497,14 +505,14 @@ export default function AdminDashboardPage() {
 
             <div className="stats-marketing-grid">
               <div>
-                <h3 className="stats-subheading">人気ページ(過去30日)</h3>
-                {stats.topPaths.length === 0 ? (
+                <h3 className="stats-subheading">商品クリック数(買物籠に入れる)</h3>
+                {stats.productClicks.length === 0 ? (
                   <p className="hint">データがありません。</p>
                 ) : (
                   <ul className="stats-rank-list">
-                    {stats.topPaths.map((p) => (
-                      <li key={p.path}>
-                        <span className="stats-rank-label">{p.path}</span>
+                    {stats.productClicks.map((p) => (
+                      <li key={p.productId}>
+                        <span className="stats-rank-label">{p.name}</span>
                         <span className="stats-rank-count">{p.count}</span>
                       </li>
                     ))}
@@ -739,7 +747,10 @@ export default function AdminDashboardPage() {
             {posts.map((p) => (
               <div className="admin-product-row" key={p.id}>
                 <div />
-                <div>{p.title}</div>
+                <div>
+                  {p.title}
+                  <div className="hint">閲覧数: {postViewMap.get(p.id) ?? 0}</div>
+                </div>
                 <span className={`badge ${p.is_free ? "" : "badge-active"}`}>
                   {p.is_free ? "無料" : "購入者限定"}
                 </span>

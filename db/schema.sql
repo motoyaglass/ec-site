@@ -82,3 +82,13 @@ create table if not exists partners (
 
 -- 既存環境向け(テーブルが既にある場合に列を追加)
 alter table partners add column if not exists address text;
+
+-- 商品クリック数(「買物籠に入れる」ボタン押下)を記録するテーブル。
+-- どの商品が一番クリックされているかを管理画面で確認するために使う。
+create table if not exists product_clicks (
+  id bigserial primary key,
+  product_id uuid not null references products(id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists product_clicks_product_id_idx on product_clicks (product_id);

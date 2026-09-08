@@ -8,7 +8,10 @@ export function middleware(req: NextRequest) {
 
   const isProtectedPage = pathname.startsWith("/admin/dashboard");
   const isProtectedApi =
-    (pathname.startsWith("/api/products") && req.method !== "GET") ||
+    // /api/products/[id]/click は訪問者から匿名でクリックを記録するための公開エンドポイント
+    (pathname.startsWith("/api/products") &&
+      req.method !== "GET" &&
+      !pathname.endsWith("/click")) ||
     (pathname.startsWith("/api/posts") && req.method !== "GET") ||
     (pathname.startsWith("/api/partners") && req.method !== "GET") ||
     // /api/orders は注文者の個人情報を含むため、GETも含めて常に保護する

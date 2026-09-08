@@ -23,6 +23,10 @@ export default function AddToCartButton({
     addItem({ productId, name, price, image_url: imageUrl });
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
+
+    fetch(`/api/products/${productId}/click`, { method: "POST", keepalive: true }).catch(() => {
+      // 記録に失敗してもカート追加自体には影響させない
+    });
   }
 
   return (

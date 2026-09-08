@@ -6,10 +6,10 @@ export const dynamic = "force-dynamic";
 type CountRow = { count: string };
 type DailyRow = { day: string; count: string };
 type HourRow = { hour: string; count: string };
-type PathRow = { path: string; count: string };
 type SourceRow = { source: string; count: string };
 type DeviceRow = { device: string; count: string };
 type PostViewRow = { path: string; count: string };
+type ProductClickRow = { product_id: string; name: string; count: string };
 
 // 管理画面用のアクセス状況集計。middleware側で管理者ログインを必須にしています。
 export async function GET() {
@@ -21,10 +21,10 @@ export async function GET() {
       [totalRow],
       daily,
       hourly,
-      topPaths,
       sources,
       devices,
       postViews,
+      productClicks,
     ] = await Promise.all([
       query<CountRow>(
         "select count(*)::text as count from page_views where created_at >= date_trunc('day', now())"
@@ -50,15 +50,6 @@ export async function GET() {
          where created_at >= now() - interval '30 days'
          group by 1
          order by 1 asc`
-      ),
-      // よく見られているページ。直近30日分の上位5件。
-      query<PathRow>(
-        `select path, count(*)::text as count
-         from page_views
-         where created_at >= now() - interval '30 days'
-         group by 1
-         order by count(*) desc
-         limit 5`
       ),
       // 流入元(検索/SNS/direct/その他)。直近30日分。
       query<SourceRow>(
@@ -91,6 +82,14 @@ export async function GET() {
          where path like '/blog/%'
          group by 1`
       ),
+      // 商品ごとの累計クリック数(買物籠に入れるボタン押下)。0件の商品も一覧に含める。
+      query<ProductClickRow>(
+        `select p.id as product_id, p.name, count(pc.id)::text as count
+         from products p
+         left join product_clicks pc on pc.product_id = p.id
+         group by p.id, p.name
+         order by count(pc.id) desc, p.name asc`
+      ),
     ]);
 
     const hourMap = new Map(hourly.map((h) => [h.hour, Number(h.count)]));
@@ -106,11 +105,15 @@ export async function GET() {
       total: Number(totalRow?.count ?? 0),
       daily: daily.map((d) => ({ day: d.day, count: Number(d.count) })),
       hourly: hourlyFilled,
-      topPaths: topPaths.map((p) => ({ path: p.path, count: Number(p.count) })),
       sources: sources.map((s) => ({ source: s.source, count: Number(s.count) })),
       devices: devices.map((d) => ({ device: d.device, count: Number(d.count) })),
       postViews: postViews.map((p) => ({
         postId: p.path.replace("/blog/", ""),
+        count: Number(p.count),
+      })),
+      productClicks: productClicks.map((p) => ({
+        productId: p.product_id,
+        name: p.name,
         count: Number(p.count),
       })),
     });
