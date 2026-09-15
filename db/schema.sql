@@ -13,11 +13,15 @@ create table if not exists products (
   image_url text,
   is_active boolean not null default true,
   stock_quantity integer not null default 1,  -- 在庫数。0になると一覧に表示したままSOLD OUT表示になる
+  available_at timestamptz,                   -- 販売開始日時。NULLなら即時販売可
   created_at timestamptz not null default now()
 );
 
 -- 既存のproductsテーブルに stock_quantity 列がまだない場合に追加(初回作成時は無視されます)
 alter table products add column if not exists stock_quantity integer not null default 1;
+
+-- 販売開始日時(NULLなら即時販売可)。指定時刻より前は購入不可として扱う。
+alter table products add column if not exists available_at timestamptz;
 
 -- 注文テーブル(Stripe Webhookから記録)
 create table if not exists orders (

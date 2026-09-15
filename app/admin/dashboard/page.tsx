@@ -38,7 +38,20 @@ const emptyProductForm = {
   image_url: "",
   is_active: true,
   stock_quantity: "1",
+  available_at: "",
 };
+
+// <input type="datetime-local"> はタイムゾーンを持たない "YYYY-MM-DDTHH:mm" 形式の値を扱う。
+// ここではブラウザのローカルタイム(=日本時間想定)としてそのままDateに変換・表示する。
+function toDatetimeLocalValue(iso: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(
+    d.getMinutes()
+  )}`;
+}
 
 const emptyPostForm = {
   title: "",
@@ -186,6 +199,7 @@ export default function AdminDashboardPage() {
       image_url: p.image_url ?? "",
       is_active: p.is_active,
       stock_quantity: String(p.stock_quantity ?? 0),
+      available_at: toDatetimeLocalValue(p.available_at),
     });
     setProductError(null);
   }
@@ -225,6 +239,9 @@ export default function AdminDashboardPage() {
         image_url: productForm.image_url.trim() || null,
         is_active: productForm.is_active,
         stock_quantity: Math.floor(stockNum),
+        available_at: productForm.available_at
+          ? new Date(productForm.available_at).toISOString()
+          : null,
       };
 
       const res = editingProductId
@@ -621,6 +638,17 @@ export default function AdminDashboardPage() {
             />
           </div>
           <p className="hint">在庫が0になると、商品一覧に表示されたままSOLD OUT表示になります。</p>
+          <div className="field">
+            <label>販売開始日時(任意)</label>
+            <input
+              type="datetime-local"
+              value={productForm.available_at}
+              onChange={(e) => setProductForm((f) => ({ ...f, available_at: e.target.value }))}
+            />
+          </div>
+          <p className="hint">
+            指定すると、その日時になるまで商品は表示されたまま購入できない状態になります。空欄なら即時販売可。
+          </p>
           <div className="checkbox-row">
             <input
               id="is_active"
@@ -668,6 +696,18 @@ export default function AdminDashboardPage() {
                   <span className="hint" style={{ margin: 0 }}>
                     {p.stock_quantity <= 0 ? "SOLD OUT" : `在庫 ${p.stock_quantity}`}
                   </span>
+                  {p.available_at && new Date(p.available_at) > new Date() && (
+                    <div className="hint">
+                      販売開始:{" "}
+                      {new Date(p.available_at).toLocaleString("ja-JP", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </div>
+                  )}
                 </div>
                 <span className={`badge ${p.is_active ? "badge-active" : ""}`}>
                   {p.is_active ? "公開中" : "非公開"}

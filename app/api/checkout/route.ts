@@ -66,6 +66,12 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+    if (product.available_at && new Date(product.available_at) > new Date()) {
+      return NextResponse.json(
+        { error: `「${product.name}」はまだ販売開始前です` },
+        { status: 400 }
+      );
+    }
     subtotal += product.price * item.quantity;
     lineItems.push({
       price_data: {

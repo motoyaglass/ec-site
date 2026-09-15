@@ -25,10 +25,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "name と price は必須です" }, { status: 400 });
   }
 
+  const availableAt =
+    typeof body.available_at === "string" && body.available_at && !isNaN(Date.parse(body.available_at))
+      ? new Date(body.available_at)
+      : null;
+
   try {
     const products = await query<Product>(
-      `insert into products (name, price, description, image_url, is_active, stock_quantity)
-       values ($1, $2, $3, $4, $5, $6)
+      `insert into products (name, price, description, image_url, is_active, stock_quantity, available_at)
+       values ($1, $2, $3, $4, $5, $6, $7)
        returning *`,
       [
         body.name,
@@ -37,6 +42,7 @@ export async function POST(req: NextRequest) {
         body.image_url || null,
         body.is_active ?? true,
         typeof body.stock_quantity === "number" ? Math.max(0, Math.floor(body.stock_quantity)) : 1,
+        availableAt,
       ]
     );
     return NextResponse.json({ product: products[0] });

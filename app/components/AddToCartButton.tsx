@@ -9,17 +9,20 @@ export default function AddToCartButton({
   price,
   imageUrl,
   soldOut,
+  upcoming,
 }: {
   productId: string;
   name: string;
   price: number;
   imageUrl: string | null;
   soldOut: boolean;
+  upcoming?: boolean;
 }) {
   const { addItem } = useCart();
   const [added, setAdded] = useState(false);
 
   function handleClick() {
+    if (upcoming) return;
     addItem({ productId, name, price, image_url: imageUrl });
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
@@ -33,10 +36,10 @@ export default function AddToCartButton({
     <button
       className="btn btn-primary"
       onClick={handleClick}
-      disabled={soldOut}
+      disabled={soldOut || upcoming}
       style={{ width: "100%" }}
     >
-      {soldOut ? "SOLD OUT" : added ? "買物籠に追加しました" : "買物籠に入れる"}
+      {upcoming ? "販売開始前" : soldOut ? "SOLD OUT" : added ? "買物籠に追加しました" : "買物籠に入れる"}
     </button>
   );
 }

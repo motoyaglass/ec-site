@@ -35,6 +35,13 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     fields.push(`stock_quantity = $${i++}`);
     values.push(Math.max(0, Math.floor(body.stock_quantity)));
   }
+  if (body.available_at === null || body.available_at === "") {
+    fields.push(`available_at = $${i++}`);
+    values.push(null);
+  } else if (typeof body.available_at === "string" && !isNaN(Date.parse(body.available_at))) {
+    fields.push(`available_at = $${i++}`);
+    values.push(new Date(body.available_at));
+  }
 
   if (fields.length === 0) {
     return NextResponse.json({ error: "更新する項目がありません" }, { status: 400 });

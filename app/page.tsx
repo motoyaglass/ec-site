@@ -14,27 +14,32 @@ function buildProductsJsonLd(products: Product[]) {
   return {
     "@context": "https://schema.org",
     "@type": "ItemList",
-    itemListElement: products.map((p, i) => ({
-      "@type": "ListItem",
-      position: i + 1,
-      item: {
-        "@type": "Product",
-        name: p.name,
-        description: p.description || undefined,
-        image: p.image_url ? absoluteUrl(p.image_url) : undefined,
-        url: siteUrl,
-        offers: {
-          "@type": "Offer",
-          priceCurrency: "JPY",
-          price: p.price,
-          availability:
-            p.stock_quantity > 0
+    itemListElement: products.map((p, i) => {
+      const isUpcoming = Boolean(p.available_at && new Date(p.available_at) > new Date());
+      return {
+        "@type": "ListItem",
+        position: i + 1,
+        item: {
+          "@type": "Product",
+          name: p.name,
+          description: p.description || undefined,
+          image: p.image_url ? absoluteUrl(p.image_url) : undefined,
+          url: siteUrl,
+          offers: {
+            "@type": "Offer",
+            priceCurrency: "JPY",
+            price: p.price,
+            availability: isUpcoming
+              ? "https://schema.org/PreOrder"
+              : p.stock_quantity > 0
               ? "https://schema.org/InStock"
               : "https://schema.org/OutOfStock",
-          url: siteUrl,
+            availabilityStarts: isUpcoming ? p.available_at ?? undefined : undefined,
+            url: siteUrl,
+          },
         },
-      },
-    })),
+      };
+    }),
   };
 }
 
@@ -51,6 +56,16 @@ async function getProducts(): Promise<Product[]> {
 
 function formatPrice(yen: number) {
   return `¥${yen.toLocaleString("ja-JP")}`;
+}
+
+function formatAvailableAt(iso: string) {
+  return new Date(iso).toLocaleString("ja-JP", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 export default async function ShopPage({
@@ -83,9 +98,14 @@ export default async function ShopPage({
         <div className="product-grid">
           {products.map((p) => {
             const soldOut = p.stock_quantity <= 0;
+            const isUpcoming = Boolean(p.available_at && new Date(p.available_at) > new Date());
             return (
               <div className="product-card" key={p.id}>
-                {soldOut && <span className="sold-out-badge">SOLD OUT</span>}
+                {isUpcoming ? (
+                  <span className="sold-out-badge">販売開始前</span>
+                ) : (
+                  soldOut && <span className="sold-out-badge">SOLD OUT</span>
+                )}
                 {p.image_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={p.image_url} alt={p.name} className="product-image" />
@@ -96,12 +116,18 @@ export default async function ShopPage({
                   <div className="product-name">{p.name}</div>
                   {p.description && <div className="product-desc">{p.description}</div>}
                   <div className="product-price">{formatPrice(p.price)}</div>
+                  {isUpcoming && p.available_at && (
+                    <p className="hint" style={{ marginBottom: 8 }}>
+                      販売開始: {formatAvailableAt(p.available_at)}〜
+                    </p>
+                  )}
                   <AddToCartButton
                     productId={p.id}
                     name={p.name}
                     price={p.price}
                     imageUrl={p.image_url}
                     soldOut={soldOut}
+                    upcoming={isUpcoming}
                   />
                 </div>
               </div>
