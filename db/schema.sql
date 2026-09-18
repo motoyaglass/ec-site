@@ -104,12 +104,3 @@ create table if not exists product_clicks (
 );
 
 create index if not exists product_clicks_product_id_idx on product_clicks (product_id);
-
--- Instagram投稿の埋め込み管理(トップページに表示する投稿を管理画面から登録)
-create table if not exists instagram_posts (
-  id uuid primary key default gen_random_uuid(),
-  url text not null,                           -- 投稿のパーマリンクURL(例: https://www.instagram.com/p/XXXXXXX/)
-  sort_order integer not null default 0,       -- 表示順(小さいほど先に表示)
-  is_active boolean not null default true,
-  created_at timestamptz not null default now()
-);

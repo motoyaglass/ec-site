@@ -75,11 +75,3 @@ export type Order = {
   status: string;
   created_at: string;
 };
-
-export type InstagramPost = {
-  id: string;
-  url: string;
-  sort_order: number;
-  is_active: boolean;
-  created_at: string;
-};

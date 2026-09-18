@@ -14,7 +14,6 @@ export function middleware(req: NextRequest) {
       !pathname.endsWith("/click")) ||
     (pathname.startsWith("/api/posts") && req.method !== "GET") ||
     (pathname.startsWith("/api/partners") && req.method !== "GET") ||
-    (pathname.startsWith("/api/instagram-posts") && req.method !== "GET") ||
     // /api/orders は注文者の個人情報を含むため、GETも含めて常に保護する
     pathname.startsWith("/api/orders") ||
     // /api/upload は管理画面からの画像アップロード専用(配信用の /api/uploads/* は公開のまま)
@@ -48,7 +47,6 @@ export const config = {
     "/api/products/:path*",
     "/api/posts/:path*",
     "/api/partners/:path*",
-    "/api/instagram-posts/:path*",
     "/api/orders/:path*",
     "/api/upload/:path*",
     "/api/stats/:path*",

@@ -2,7 +2,6 @@ import Link from "next/link";
 import { query, Product } from "@/lib/db";
 import ProductCard from "./components/ProductCard";
 import ClearCartOnSuccess from "./components/ClearCartOnSuccess";
-import InstagramFeed from "./components/InstagramFeed";
 
 export const dynamic = "force-dynamic";
 
@@ -121,8 +120,6 @@ export default async function ShopPage({
           ))}
         </div>
       )}
-
-      <InstagramFeed />
     </div>
   );
 }

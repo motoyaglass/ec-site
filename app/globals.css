@@ -398,24 +398,6 @@ main {
   border-color: var(--fg);
 }
 
-.instagram-feed {
-  margin-top: 56px;
-  padding-top: 32px;
-  border-top: 1px solid var(--border);
-}
-
-.instagram-feed-title {
-  font-size: 20px;
-  font-weight: 700;
-  margin: 0 0 8px;
-}
-
-.instagram-feed-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 20px;
-}
-
 .product-image {
   width: 100%;
   aspect-ratio: 1 / 1;
