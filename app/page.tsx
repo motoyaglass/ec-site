@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { query, Product } from "@/lib/db";
-import AddToCartButton from "./components/AddToCartButton";
+import ProductCard from "./components/ProductCard";
 import ClearCartOnSuccess from "./components/ClearCartOnSuccess";
+import InstagramFeed from "./components/InstagramFeed";
 
 export const dynamic = "force-dynamic";
 
@@ -54,26 +56,25 @@ async function getProducts(): Promise<Product[]> {
   }
 }
 
-function formatPrice(yen: number) {
-  return `¥${yen.toLocaleString("ja-JP")}`;
-}
-
-function formatAvailableAt(iso: string) {
-  return new Date(iso).toLocaleString("ja-JP", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
 export default async function ShopPage({
   searchParams,
 }: {
-  searchParams: { checkout?: string };
+  searchParams: { checkout?: string; category?: string };
 }) {
   const products = await getProducts();
+
+  const categories = Array.from(
+    new Set(products.map((p) => p.category).filter((c): c is string => Boolean(c)))
+  ).sort((a, b) => a.localeCompare(b, "ja"));
+
+  const activeCategory =
+    searchParams.category && categories.includes(searchParams.category)
+      ? searchParams.category
+      : null;
+
+  const visibleProducts = activeCategory
+    ? products.filter((p) => p.category === activeCategory)
+    : products;
 
   return (
     <div>
@@ -92,49 +93,36 @@ export default async function ShopPage({
         <p style={{ color: "#6b6b6b", marginBottom: 24 }}>決済がキャンセルされました。</p>
       )}
 
-      {products.length === 0 ? (
-        <div className="empty-state">現在、販売中の商品はありません。</div>
-      ) : (
-        <div className="product-grid">
-          {products.map((p) => {
-            const soldOut = p.stock_quantity <= 0;
-            const isUpcoming = Boolean(p.available_at && new Date(p.available_at) > new Date());
-            return (
-              <div className="product-card" key={p.id}>
-                {isUpcoming ? (
-                  <span className="sold-out-badge">販売開始前</span>
-                ) : (
-                  soldOut && <span className="sold-out-badge">SOLD OUT</span>
-                )}
-                {p.image_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={p.image_url} alt={p.name} className="product-image" />
-                ) : (
-                  <div className="product-image-placeholder">No Image</div>
-                )}
-                <div className="product-body">
-                  <div className="product-name">{p.name}</div>
-                  {p.description && <div className="product-desc">{p.description}</div>}
-                  <div className="product-price">{formatPrice(p.price)}</div>
-                  {isUpcoming && p.available_at && (
-                    <p className="hint" style={{ marginBottom: 8 }}>
-                      販売開始: {formatAvailableAt(p.available_at)}〜
-                    </p>
-                  )}
-                  <AddToCartButton
-                    productId={p.id}
-                    name={p.name}
-                    price={p.price}
-                    imageUrl={p.image_url}
-                    soldOut={soldOut}
-                    upcoming={isUpcoming}
-                  />
-                </div>
-              </div>
-            );
-          })}
+      {categories.length > 0 && (
+        <div className="category-filter">
+          <Link href="/" className={`category-chip ${!activeCategory ? "active" : ""}`}>
+            すべて
+          </Link>
+          {categories.map((c) => (
+            <Link
+              key={c}
+              href={`/?category=${encodeURIComponent(c)}`}
+              className={`category-chip ${activeCategory === c ? "active" : ""}`}
+            >
+              {c}
+            </Link>
+          ))}
         </div>
       )}
+
+      {products.length === 0 ? (
+        <div className="empty-state">現在、販売中の商品はありません。</div>
+      ) : visibleProducts.length === 0 ? (
+        <div className="empty-state">該当する商品がありません。</div>
+      ) : (
+        <div className="product-grid">
+          {visibleProducts.map((p) => (
+            <ProductCard product={p} key={p.id} />
+          ))}
+        </div>
+      )}
+
+      <InstagramFeed />
     </div>
   );
 }

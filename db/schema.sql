@@ -14,6 +14,7 @@ create table if not exists products (
   is_active boolean not null default true,
   stock_quantity integer not null default 1,  -- 在庫数。0になると一覧に表示したままSOLD OUT表示になる
   available_at timestamptz,                   -- 販売開始日時。NULLなら即時販売可
+  category text,                              -- 商品カテゴリ(任意の自由入力。絞り込み表示に使用)
   created_at timestamptz not null default now()
 );
 
@@ -22,6 +23,9 @@ alter table products add column if not exists stock_quantity integer not null de
 
 -- 販売開始日時(NULLなら即時販売可)。指定時刻より前は購入不可として扱う。
 alter table products add column if not exists available_at timestamptz;
+
+-- 商品カテゴリ(任意)
+alter table products add column if not exists category text;
 
 -- 注文テーブル(Stripe Webhookから記録)
 create table if not exists orders (
@@ -32,8 +36,12 @@ create table if not exists orders (
   shipping_address jsonb,
   items jsonb not null default '[]'::jsonb,  -- [{"id":"...","name":"...","price":1500,"quantity":2}]
   amount_total integer not null default 0,
+  status text not null default '処理中',       -- '処理中' | '発送済み'。購入者向け注文状況確認ページに表示
   created_at timestamptz not null default now()
 );
+
+-- 既存環境向け(テーブルが既にある場合に列を追加)
+alter table orders add column if not exists status text not null default '処理中';
 
 -- 決済完了時に在庫を安全に減算するための関数(0未満にはならない)
 create or replace function decrement_stock(p_id uuid, qty integer)
@@ -96,3 +104,12 @@ create table if not exists product_clicks (
 );
 
 create index if not exists product_clicks_product_id_idx on product_clicks (product_id);
+
+-- Instagram投稿の埋め込み管理(トップページに表示する投稿を管理画面から登録)
+create table if not exists instagram_posts (
+  id uuid primary key default gen_random_uuid(),
+  url text not null,                           -- 投稿のパーマリンクURL(例: https://www.instagram.com/p/XXXXXXX/)
+  sort_order integer not null default 0,       -- 表示順(小さいほど先に表示)
+  is_active boolean not null default true,
+  created_at timestamptz not null default now()
+);

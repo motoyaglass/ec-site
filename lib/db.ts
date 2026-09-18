@@ -34,6 +34,7 @@ export type Product = {
   is_active: boolean;
   stock_quantity: number;
   available_at: string | null;
+  category: string | null;
   created_at: string;
 };
 
@@ -71,5 +72,14 @@ export type Order = {
   shipping_address: Record<string, unknown> | null;
   items: OrderItem[];
   amount_total: number;
+  status: string;
+  created_at: string;
+};
+
+export type InstagramPost = {
+  id: string;
+  url: string;
+  sort_order: number;
+  is_active: boolean;
   created_at: string;
 };

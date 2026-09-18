@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import type { Product, Post, Order, Partner } from "@/lib/db";
+import type { Product, Post, Order, Partner, InstagramPost } from "@/lib/db";
 import RichTextEditor from "../../components/RichTextEditor";
 
 type DailyStat = { day: string; count: number };
@@ -39,6 +39,7 @@ const emptyProductForm = {
   is_active: true,
   stock_quantity: "1",
   available_at: "",
+  category: "",
 };
 
 // <input type="datetime-local"> はタイムゾーンを持たない "YYYY-MM-DDTHH:mm" 形式の値を扱う。
@@ -65,6 +66,11 @@ const emptyPartnerForm = {
   name: "",
   address: "",
   is_active: true,
+};
+
+const emptyInstagramForm = {
+  url: "",
+  sort_order: "0",
 };
 
 export default function AdminDashboardPage() {
@@ -98,6 +104,14 @@ export default function AdminDashboardPage() {
   // 注文履歴
   const [orders, setOrders] = useState<Order[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
+  const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
+
+  // Instagram投稿管理
+  const [instagramPosts, setInstagramPosts] = useState<InstagramPost[]>([]);
+  const [loadingInstagramPosts, setLoadingInstagramPosts] = useState(true);
+  const [instagramForm, setInstagramForm] = useState(emptyInstagramForm);
+  const [instagramError, setInstagramError] = useState<string | null>(null);
+  const [savingInstagram, setSavingInstagram] = useState(false);
 
   // アクセス状況
   const [stats, setStats] = useState<Stats | null>(null);
@@ -133,6 +147,14 @@ export default function AdminDashboardPage() {
     const data = await res.json();
     setOrders(data.orders ?? []);
     setLoadingOrders(false);
+  }, []);
+
+  const loadInstagramPosts = useCallback(async () => {
+    setLoadingInstagramPosts(true);
+    const res = await fetch("/api/instagram-posts?all=1");
+    const data = await res.json();
+    setInstagramPosts(data.posts ?? []);
+    setLoadingInstagramPosts(false);
   }, []);
 
   const loadStats = useCallback(async () => {
@@ -179,8 +201,9 @@ export default function AdminDashboardPage() {
     loadPosts();
     loadPartners();
     loadOrders();
+    loadInstagramPosts();
     loadStats();
-  }, [loadProducts, loadPosts, loadPartners, loadOrders, loadStats]);
+  }, [loadProducts, loadPosts, loadPartners, loadOrders, loadInstagramPosts, loadStats]);
 
   async function handleLogout() {
     await fetch("/api/admin/logout", { method: "POST" });
@@ -200,6 +223,7 @@ export default function AdminDashboardPage() {
       is_active: p.is_active,
       stock_quantity: String(p.stock_quantity ?? 0),
       available_at: toDatetimeLocalValue(p.available_at),
+      category: p.category ?? "",
     });
     setProductError(null);
   }
@@ -242,6 +266,7 @@ export default function AdminDashboardPage() {
         available_at: productForm.available_at
           ? new Date(productForm.available_at).toISOString()
           : null,
+        category: productForm.category.trim() || null,
       };
 
       const res = editingProductId
@@ -444,6 +469,87 @@ export default function AdminDashboardPage() {
     }
   }
 
+  // --- 注文 ---
+
+  async function handleUpdateOrderStatus(id: string, status: string) {
+    setUpdatingOrderId(id);
+    try {
+      const res = await fetch(`/api/orders/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "更新に失敗しました");
+      await loadOrders();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "エラーが発生しました");
+    } finally {
+      setUpdatingOrderId(null);
+    }
+  }
+
+  // --- Instagram投稿 ---
+
+  async function handleInstagramSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setInstagramError(null);
+
+    if (!instagramForm.url.trim()) {
+      setInstagramError("投稿URLを入力してください");
+      return;
+    }
+
+    const sortNum = Number(instagramForm.sort_order);
+    if (!Number.isFinite(sortNum)) {
+      setInstagramError("表示順は数値で入力してください");
+      return;
+    }
+
+    setSavingInstagram(true);
+    try {
+      const res = await fetch("/api/instagram-posts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: instagramForm.url.trim(), sort_order: Math.floor(sortNum) }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "保存に失敗しました");
+
+      setInstagramForm(emptyInstagramForm);
+      await loadInstagramPosts();
+    } catch (err) {
+      setInstagramError(err instanceof Error ? err.message : "エラーが発生しました");
+    } finally {
+      setSavingInstagram(false);
+    }
+  }
+
+  async function handleToggleInstagramActive(post: InstagramPost) {
+    const res = await fetch(`/api/instagram-posts/${post.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_active: !post.is_active }),
+    });
+    if (res.ok) {
+      await loadInstagramPosts();
+    } else {
+      const data = await res.json();
+      alert(data.error || "更新に失敗しました");
+    }
+  }
+
+  async function handleDeleteInstagramPost(id: string) {
+    if (!confirm("この投稿を削除しますか?")) return;
+    const res = await fetch(`/api/instagram-posts/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      await loadInstagramPosts();
+    } else {
+      const data = await res.json();
+      alert(data.error || "削除に失敗しました");
+    }
+  }
+
   return (
     <div>
       <div className="admin-toolbar">
@@ -629,6 +735,21 @@ export default function AdminDashboardPage() {
             )}
           </div>
           <div className="field">
+            <label>カテゴリ(任意)</label>
+            <input
+              list="product-categories"
+              value={productForm.category}
+              onChange={(e) => setProductForm((f) => ({ ...f, category: e.target.value }))}
+              placeholder="例: コップ・グラス"
+            />
+            <datalist id="product-categories">
+              {Array.from(new Set(products.map((p) => p.category).filter(Boolean))).map((c) => (
+                <option value={c ?? ""} key={c} />
+              ))}
+            </datalist>
+          </div>
+          <p className="hint">入力すると、ショップページでカテゴリごとの絞り込みができるようになります。</p>
+          <div className="field">
             <label>在庫数</label>
             <input
               type="number"
@@ -695,6 +816,7 @@ export default function AdminDashboardPage() {
                   <br />
                   <span className="hint" style={{ margin: 0 }}>
                     {p.stock_quantity <= 0 ? "SOLD OUT" : `在庫 ${p.stock_quantity}`}
+                    {p.category && ` ・ ${p.category}`}
                   </span>
                   {p.available_at && new Date(p.available_at) > new Date() && (
                     <div className="hint">
@@ -883,6 +1005,73 @@ export default function AdminDashboardPage() {
         )}
       </div>
 
+      {/* Instagram投稿 */}
+      <div className="admin-section">
+        <h2>Instagram投稿</h2>
+        <p className="hint">
+          投稿のパーマリンクURL(例: https://www.instagram.com/p/XXXXXXX/)を登録すると、トップページに埋め込み表示されます。
+        </p>
+        <form onSubmit={handleInstagramSubmit}>
+          <div className="field">
+            <label>投稿URL</label>
+            <input
+              value={instagramForm.url}
+              onChange={(e) => setInstagramForm((f) => ({ ...f, url: e.target.value }))}
+              placeholder="https://www.instagram.com/p/XXXXXXX/"
+            />
+          </div>
+          <div className="field">
+            <label>表示順(小さいほど先に表示)</label>
+            <input
+              type="number"
+              value={instagramForm.sort_order}
+              onChange={(e) => setInstagramForm((f) => ({ ...f, sort_order: e.target.value }))}
+            />
+          </div>
+          {instagramError && <p className="error-text">{instagramError}</p>}
+          <button className="btn btn-primary" type="submit" disabled={savingInstagram}>
+            {savingInstagram ? "保存中..." : "追加する"}
+          </button>
+        </form>
+
+        <div style={{ marginTop: 20 }}>
+          {loadingInstagramPosts ? (
+            <p>読み込み中...</p>
+          ) : instagramPosts.length === 0 ? (
+            <p className="hint">まだ投稿がありません。</p>
+          ) : (
+            <div>
+              {instagramPosts.map((post) => (
+                <div className="admin-product-row" key={post.id}>
+                  <div />
+                  <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {post.url}
+                  </div>
+                  <span className="badge">表示順 {post.sort_order}</span>
+                  <span className={`badge ${post.is_active ? "badge-active" : ""}`}>
+                    {post.is_active ? "公開中" : "非公開"}
+                  </span>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => handleToggleInstagramActive(post)}
+                  >
+                    {post.is_active ? "非公開にする" : "公開する"}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-danger"
+                    onClick={() => handleDeleteInstagramPost(post.id)}
+                  >
+                    削除
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* 注文履歴 */}
       <div className="admin-section">
         <h2>注文履歴</h2>
@@ -908,6 +1097,21 @@ export default function AdminDashboardPage() {
                 <div className="order-card-address">
                   {o.customer_email && <div>{o.customer_email}</div>}
                   {formatShippingAddress(o)}
+                </div>
+                <div className="row" style={{ marginTop: 10, alignItems: "center" }}>
+                  <span className={`badge ${o.status === "発送済み" ? "badge-active" : ""}`}>
+                    {o.status}
+                  </span>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    disabled={updatingOrderId === o.id}
+                    onClick={() =>
+                      handleUpdateOrderStatus(o.id, o.status === "発送済み" ? "処理中" : "発送済み")
+                    }
+                  >
+                    {o.status === "発送済み" ? "処理中に戻す" : "発送済みにする"}
+                  </button>
                 </div>
               </div>
             ))}

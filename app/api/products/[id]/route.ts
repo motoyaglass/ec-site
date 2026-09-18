@@ -42,6 +42,13 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     fields.push(`available_at = $${i++}`);
     values.push(new Date(body.available_at));
   }
+  if (body.category === null || body.category === "") {
+    fields.push(`category = $${i++}`);
+    values.push(null);
+  } else if (typeof body.category === "string") {
+    fields.push(`category = $${i++}`);
+    values.push(body.category.trim());
+  }
 
   if (fields.length === 0) {
     return NextResponse.json({ error: "更新する項目がありません" }, { status: 400 });

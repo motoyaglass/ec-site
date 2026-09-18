@@ -32,13 +32,74 @@ a {
 }
 
 .site-header {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 40px 24px 16px;
+}
+
+.site-header-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  max-width: 960px;
-  margin: 0 auto;
-  padding: 40px 24px 16px;
+}
+
+.menu-toggle {
+  display: none;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.menu-toggle-icon,
+.menu-toggle-icon::before,
+.menu-toggle-icon::after {
+  content: "";
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: var(--fg);
+  transition: transform 0.2s ease, opacity 0.2s ease, background 0.2s ease;
+}
+
+.menu-toggle-icon {
+  position: relative;
+}
+
+.menu-toggle-icon::before {
+  position: absolute;
+  top: -7px;
+  left: 0;
+}
+
+.menu-toggle-icon::after {
+  position: absolute;
+  top: 7px;
+  left: 0;
+}
+
+.menu-toggle-icon.open {
+  background: transparent;
+}
+
+.menu-toggle-icon.open::before {
+  top: 0;
+  transform: rotate(45deg);
+}
+
+.menu-toggle-icon.open::after {
+  top: 0;
+  transform: rotate(-45deg);
+}
+
+.site-nav-mobile {
+  display: none;
 }
 
 .site-logo-block {
@@ -183,7 +244,28 @@ main {
   }
 
   .site-nav {
-    gap: 14px;
+    display: none;
+  }
+
+  .menu-toggle {
+    display: inline-flex;
+  }
+
+  .site-nav-mobile {
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+
+  .site-nav-mobile.open {
+    display: flex;
+  }
+
+  .site-nav-mobile .site-nav-link {
+    padding: 12px 4px;
+    font-size: 16px;
   }
 
   .site-nav-link {
@@ -242,6 +324,96 @@ main {
   padding: 4px 10px;
   border-radius: 0;
   z-index: 1;
+}
+
+.low-stock-badge {
+  background: #fff;
+  color: var(--fg);
+  border: 1px solid var(--fg);
+}
+
+.favorite-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 0;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--fg);
+  padding: 0;
+  transition: transform 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.favorite-btn:hover {
+  transform: translateY(-1px);
+}
+
+.favorite-btn.active {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.product-category {
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+.category-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.category-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  font-size: 13px;
+  border: 1px solid var(--border);
+  border-radius: 0;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.category-chip:hover {
+  border-color: var(--fg);
+  color: var(--fg);
+}
+
+.category-chip.active {
+  background: var(--fg);
+  color: #fff;
+  border-color: var(--fg);
+}
+
+.instagram-feed {
+  margin-top: 56px;
+  padding-top: 32px;
+  border-top: 1px solid var(--border);
+}
+
+.instagram-feed-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0 0 8px;
+}
+
+.instagram-feed-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
 }
 
 .product-image {

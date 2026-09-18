@@ -30,10 +30,13 @@ export async function POST(req: NextRequest) {
       ? new Date(body.available_at)
       : null;
 
+  const category =
+    typeof body.category === "string" && body.category.trim() ? body.category.trim() : null;
+
   try {
     const products = await query<Product>(
-      `insert into products (name, price, description, image_url, is_active, stock_quantity, available_at)
-       values ($1, $2, $3, $4, $5, $6, $7)
+      `insert into products (name, price, description, image_url, is_active, stock_quantity, available_at, category)
+       values ($1, $2, $3, $4, $5, $6, $7, $8)
        returning *`,
       [
         body.name,
@@ -43,6 +46,7 @@ export async function POST(req: NextRequest) {
         body.is_active ?? true,
         typeof body.stock_quantity === "number" ? Math.max(0, Math.floor(body.stock_quantity)) : 1,
         availableAt,
+        category,
       ]
     );
     return NextResponse.json({ product: products[0] });
