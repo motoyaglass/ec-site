@@ -171,6 +171,14 @@ a {
   font-weight: 700;
 }
 
+.cart-shortcut {
+  display: none;
+  color: var(--fg);
+  text-decoration: none;
+  align-items: center;
+  justify-content: center;
+}
+
 main {
   max-width: 960px;
   margin: 0 auto;
@@ -243,12 +251,39 @@ main {
     height: 60px;
   }
 
+  .site-header-row {
+    position: relative;
+    justify-content: center;
+  }
+
   .site-nav {
     display: none;
   }
 
   .menu-toggle {
     display: inline-flex;
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 40px;
+    height: 40px;
+  }
+
+  .cart-shortcut {
+    display: inline-flex;
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 40px;
+    height: 40px;
+  }
+
+  .cart-shortcut-badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
   }
 
   .site-nav-mobile {

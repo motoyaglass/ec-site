@@ -49,9 +49,23 @@ export default function Header() {
     },
   ];
 
+  // スマホ表示では買物籠は右上のアイコンで常時アクセスできるようにし、
+  // ドロワー(ハンバーガーメニュー)には残りのリンクだけを表示する
+  const drawerLinks = links.filter((l) => l.href !== "/cart");
+
   return (
     <header className="site-header">
       <div className="site-header-row">
+        <button
+          type="button"
+          className="menu-toggle"
+          aria-label={menuOpen ? "メニューを閉じる" : "メニューを開く"}
+          aria-expanded={menuOpen}
+          onClick={() => setMenuOpen((v) => !v)}
+        >
+          <span className={`menu-toggle-icon ${menuOpen ? "open" : ""}`} />
+        </button>
+
         <Link href="/" className="site-logo-block" aria-label="工芸硝子モトヤ トップページ">
           <Logo />
         </Link>
@@ -70,19 +84,29 @@ export default function Header() {
           ))}
         </nav>
 
-        <button
-          type="button"
-          className="menu-toggle"
-          aria-label={menuOpen ? "メニューを閉じる" : "メニューを開く"}
-          aria-expanded={menuOpen}
-          onClick={() => setMenuOpen((v) => !v)}
-        >
-          <span className={`menu-toggle-icon ${menuOpen ? "open" : ""}`} />
-        </button>
+        <Link href="/cart" className="cart-shortcut" aria-label="買物籠を見る">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+            <path
+              d="M6 8h12l-1 12a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1L6 8z"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M9 8V6a3 3 0 0 1 6 0v2"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              strokeLinecap="round"
+            />
+          </svg>
+          {totalCount > 0 && <span className="nav-badge cart-shortcut-badge">{totalCount}</span>}
+        </Link>
       </div>
 
       <nav className={`site-nav-mobile ${menuOpen ? "open" : ""}`}>
-        {links.map((l) => (
+        {drawerLinks.map((l) => (
           <Link
             key={l.href}
             href={l.href}
