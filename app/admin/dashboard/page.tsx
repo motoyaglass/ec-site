@@ -40,6 +40,9 @@ const emptyProductForm = {
   stock_quantity: "1",
   available_at: "",
   category: "",
+  is_preorder: false,
+  preorder_note: "",
+  preorder_ship_date: "",
 };
 
 // <input type="datetime-local"> はタイムゾーンを持たない "YYYY-MM-DDTHH:mm" 形式の値を扱う。
@@ -203,6 +206,9 @@ export default function AdminDashboardPage() {
       stock_quantity: String(p.stock_quantity ?? 0),
       available_at: toDatetimeLocalValue(p.available_at),
       category: p.category ?? "",
+      is_preorder: p.is_preorder ?? false,
+      preorder_note: p.preorder_note ?? "",
+      preorder_ship_date: p.preorder_ship_date ? p.preorder_ship_date.slice(0, 10) : "",
     });
     setProductError(null);
   }
@@ -246,6 +252,9 @@ export default function AdminDashboardPage() {
           ? new Date(productForm.available_at).toISOString()
           : null,
         category: productForm.category.trim() || null,
+        is_preorder: productForm.is_preorder,
+        preorder_note: productForm.preorder_note.trim() || null,
+        preorder_ship_date: productForm.preorder_ship_date || null,
       };
 
       const res = editingProductId
@@ -690,6 +699,40 @@ export default function AdminDashboardPage() {
           </p>
           <div className="checkbox-row">
             <input
+              id="is_preorder"
+              type="checkbox"
+              checked={productForm.is_preorder}
+              onChange={(e) => setProductForm((f) => ({ ...f, is_preorder: e.target.checked }))}
+            />
+            <label htmlFor="is_preorder">予約販売(受注生産)にする</label>
+          </div>
+          {productForm.is_preorder && (
+            <>
+              <div className="field">
+                <label>発送目安メッセージ(任意)</label>
+                <input
+                  value={productForm.preorder_note}
+                  onChange={(e) => setProductForm((f) => ({ ...f, preorder_note: e.target.value }))}
+                  placeholder="例: 受注生産のため発送まで3〜4週間ほどいただきます"
+                />
+              </div>
+              <div className="field">
+                <label>発送予定日(任意)</label>
+                <input
+                  type="date"
+                  value={productForm.preorder_ship_date}
+                  onChange={(e) =>
+                    setProductForm((f) => ({ ...f, preorder_ship_date: e.target.value }))
+                  }
+                />
+              </div>
+              <p className="hint">
+                商品一覧に「予約販売」バッジが表示され、メッセージと発送予定日があわせて表示されます。
+              </p>
+            </>
+          )}
+          <div className="checkbox-row">
+            <input
               id="is_active"
               type="checkbox"
               checked={productForm.is_active}
@@ -735,6 +778,7 @@ export default function AdminDashboardPage() {
                   <span className="hint" style={{ margin: 0 }}>
                     {p.stock_quantity <= 0 ? "SOLD OUT" : `在庫 ${p.stock_quantity}`}
                     {p.category && ` ・ ${p.category}`}
+                    {p.is_preorder && " ・ 予約販売"}
                   </span>
                   {p.available_at && new Date(p.available_at) > new Date() && (
                     <div className="hint">

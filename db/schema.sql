@@ -27,6 +27,13 @@ alter table products add column if not exists available_at timestamptz;
 -- 商品カテゴリ(任意)
 alter table products add column if not exists category text;
 
+-- 予約販売(受注生産)。trueの場合、商品一覧・詳細に「予約販売」バッジと発送目安を表示する。
+alter table products add column if not exists is_preorder boolean not null default false;
+-- 発送目安を伝える自由入力メッセージ(例: 「受注生産のため発送まで3〜4週間」)
+alter table products add column if not exists preorder_note text;
+-- 発送予定日(任意)。指定すると商品ページに自動表示される。
+alter table products add column if not exists preorder_ship_date date;
+
 -- 注文テーブル(Stripe Webhookから記録)
 create table if not exists orders (
   id uuid primary key default gen_random_uuid(),

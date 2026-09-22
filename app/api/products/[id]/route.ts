@@ -49,6 +49,27 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     fields.push(`category = $${i++}`);
     values.push(body.category.trim());
   }
+  if (typeof body.is_preorder === "boolean") {
+    fields.push(`is_preorder = $${i++}`);
+    values.push(body.is_preorder);
+  }
+  if (body.preorder_note === null || body.preorder_note === "") {
+    fields.push(`preorder_note = $${i++}`);
+    values.push(null);
+  } else if (typeof body.preorder_note === "string") {
+    fields.push(`preorder_note = $${i++}`);
+    values.push(body.preorder_note.trim());
+  }
+  if (body.preorder_ship_date === null || body.preorder_ship_date === "") {
+    fields.push(`preorder_ship_date = $${i++}`);
+    values.push(null);
+  } else if (
+    typeof body.preorder_ship_date === "string" &&
+    !isNaN(Date.parse(body.preorder_ship_date))
+  ) {
+    fields.push(`preorder_ship_date = $${i++}`);
+    values.push(body.preorder_ship_date);
+  }
 
   if (fields.length === 0) {
     return NextResponse.json({ error: "更新する項目がありません" }, { status: 400 });

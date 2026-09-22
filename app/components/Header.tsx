@@ -5,18 +5,14 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import Logo from "./Logo";
 import { useCart } from "./CartContext";
-import { useFavorites } from "./FavoritesContext";
 
 export default function Header() {
   const pathname = usePathname();
   const { totalCount } = useCart();
-  const { ids: favoriteIds } = useFavorites();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const isShop = pathname === "/";
   const isBlog = pathname.startsWith("/blog");
-  const isFavorites = pathname.startsWith("/favorites");
-  const isOrders = pathname.startsWith("/orders");
   const isStockists = pathname.startsWith("/stockists");
   const isCart = pathname.startsWith("/cart");
 
@@ -32,13 +28,6 @@ export default function Header() {
   const links = [
     { href: "/", label: "通販", active: isShop },
     { href: "/blog", label: "日誌", active: isBlog },
-    {
-      href: "/favorites",
-      label: "お気に入り",
-      active: isFavorites,
-      badge: favoriteIds.length > 0 ? favoriteIds.length : undefined,
-    },
-    { href: "/orders", label: "注文状況確認", active: isOrders },
     { href: "/stockists", label: "取引業者一覧", active: isStockists },
     {
       href: "/cart",

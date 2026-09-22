@@ -1,6 +1,5 @@
 import type { Product } from "@/lib/db";
 import AddToCartButton from "./AddToCartButton";
-import FavoriteButton from "./FavoriteButton";
 
 const LOW_STOCK_THRESHOLD = 3;
 
@@ -18,6 +17,14 @@ function formatAvailableAt(iso: string) {
   });
 }
 
+function formatShipDate(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString("ja-JP", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
 export default function ProductCard({ product: p }: { product: Product }) {
   const soldOut = p.stock_quantity <= 0;
   const isUpcoming = Boolean(p.available_at && new Date(p.available_at) > new Date());
@@ -32,7 +39,7 @@ export default function ProductCard({ product: p }: { product: Product }) {
       ) : (
         isLowStock && <span className="sold-out-badge low-stock-badge">残りわずか</span>
       )}
-      <FavoriteButton productId={p.id} />
+      {p.is_preorder && <span className="preorder-badge">予約販売(受注生産)</span>}
       {p.image_url ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={p.image_url} alt={p.name} className="product-image" />
@@ -52,6 +59,17 @@ export default function ProductCard({ product: p }: { product: Product }) {
         {isUpcoming && p.available_at && (
           <p className="hint" style={{ marginBottom: 8 }}>
             販売開始: {formatAvailableAt(p.available_at)}〜
+          </p>
+        )}
+        {p.is_preorder && (
+          <p className="hint preorder-hint" style={{ marginBottom: 8 }}>
+            {p.preorder_note || "受注生産のため、発送までお時間をいただきます。"}
+            {p.preorder_ship_date && (
+              <>
+                <br />
+                発送予定: {formatShipDate(p.preorder_ship_date)}〜
+              </>
+            )}
           </p>
         )}
         <AddToCartButton

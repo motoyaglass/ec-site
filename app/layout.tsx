@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import { CartProvider } from "./components/CartContext";
-import { FavoritesProvider } from "./components/FavoritesContext";
 import VisitTracker from "./components/VisitTracker";
 import "./globals.css";
 
@@ -55,12 +54,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
         <CartProvider>
-          <FavoritesProvider>
-            <VisitTracker />
-            <Header />
-            <main>{children}</main>
-            <Footer />
-          </FavoritesProvider>
+          <VisitTracker />
+          <Header />
+          <main>{children}</main>
+          <Footer />
         </CartProvider>
       </body>
     </html>
