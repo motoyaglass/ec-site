@@ -6,6 +6,7 @@ import { calculateShippingFee, getShippingRegion, FREE_SHIPPING_THRESHOLD } from
 export const dynamic = "force-dynamic";
 
 type CheckoutItem = { productId: string; quantity: number };
+type MetaItem = { productId: string; quantity: number; isPreorder: boolean };
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
@@ -53,6 +54,7 @@ export async function POST(req: NextRequest) {
 
   const productMap = new Map(products.map((p) => [p.id, p]));
   const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
+  const metaItems: MetaItem[] = [];
   let subtotal = 0;
 
   for (const item of normalized) {
@@ -73,6 +75,11 @@ export async function POST(req: NextRequest) {
       );
     }
     subtotal += product.price * item.quantity;
+    metaItems.push({
+      productId: item.productId,
+      quantity: item.quantity,
+      isPreorder: Boolean(product.is_preorder),
+    });
     lineItems.push({
       price_data: {
         currency: "jpy",
@@ -113,9 +120,9 @@ export async function POST(req: NextRequest) {
       mode: "payment",
       line_items: lineItems,
       shipping_address_collection: { allowed_countries: ["JP"] },
-      // Webhookで在庫を減算する際に使う商品ID・数量の一覧(小規模ショップ向けの簡易実装)
+      // Webhookで在庫を減算する際に使う商品ID・数量・予約販売フラグの一覧(小規模ショップ向けの簡易実装)
       metadata: {
-        items: JSON.stringify(normalized),
+        items: JSON.stringify(metaItems),
       },
       success_url: `${origin}/?checkout=success`,
       cancel_url: `${origin}/cart`,

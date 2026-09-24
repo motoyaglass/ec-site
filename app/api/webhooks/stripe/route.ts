@@ -52,7 +52,7 @@ async function recordOrderAndDecrementStock(stripe: Stripe, session: Stripe.Chec
 
   const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 100 });
 
-  let metaItems: { productId: string; quantity: number }[] = [];
+  let metaItems: { productId: string; quantity: number; isPreorder?: boolean }[] = [];
   try {
     metaItems = JSON.parse(session.metadata?.items ?? "[]");
   } catch {
@@ -60,12 +60,13 @@ async function recordOrderAndDecrementStock(stripe: Stripe, session: Stripe.Chec
   }
 
   // Stripeの正式なline_items(名前・実際に請求された価格)に、チェックアウト作成時に
-  // metadataへ保存しておいた商品IDを順番に対応付ける
+  // metadataへ保存しておいた商品ID・予約販売フラグを順番に対応付ける
   const items = lineItems.data.map((li, i) => ({
     id: metaItems[i]?.productId ?? "",
     name: li.description ?? "",
     price: li.price?.unit_amount ?? 0,
     quantity: li.quantity ?? 0,
+    is_preorder: metaItems[i]?.isPreorder ?? false,
   }));
 
   // Stripeのバージョンによって shipping_details / shipping のどちらかに配送先が入る

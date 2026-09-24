@@ -71,8 +71,20 @@ const emptyPartnerForm = {
   is_active: true,
 };
 
+type AdminTab = "products" | "posts" | "partners" | "orders" | "stats";
+
+const ADMIN_TABS: { key: AdminTab; label: string }[] = [
+  { key: "products", label: "商品" },
+  { key: "posts", label: "ブログ" },
+  { key: "partners", label: "取引先" },
+  { key: "orders", label: "注文履歴" },
+  { key: "stats", label: "アクセス状況" },
+];
+
 export default function AdminDashboardPage() {
   const router = useRouter();
+
+  const [activeTab, setActiveTab] = useState<AdminTab>("products");
 
   // 商品管理
   const [products, setProducts] = useState<Product[]>([]);
@@ -488,6 +500,21 @@ export default function AdminDashboardPage() {
         </button>
       </div>
 
+      <div className="admin-tabs">
+        {ADMIN_TABS.map((t) => (
+          <button
+            key={t.key}
+            type="button"
+            className={`admin-tab ${activeTab === t.key ? "active" : ""}`}
+            onClick={() => setActiveTab(t.key)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === "stats" && (
+        <>
       {/* アクセス状況 */}
       <div className="admin-section">
         <h2>アクセス状況</h2>
@@ -609,7 +636,11 @@ export default function AdminDashboardPage() {
           </>
         )}
       </div>
+        </>
+      )}
 
+      {activeTab === "products" && (
+        <>
       {/* 商品管理 */}
       <div className="admin-section">
         <h2>{editingProductId ? "商品を編集" : "商品を追加"}</h2>
@@ -807,7 +838,11 @@ export default function AdminDashboardPage() {
           </div>
         )}
       </div>
+        </>
+      )}
 
+      {activeTab === "posts" && (
+        <>
       {/* ブログ管理 */}
       <div className="admin-section">
         <h2>{editingPostId ? "記事を編集" : "記事を追加"}</h2>
@@ -892,7 +927,11 @@ export default function AdminDashboardPage() {
           </div>
         )}
       </div>
+        </>
+      )}
 
+      {activeTab === "partners" && (
+        <>
       {/* 取引先管理 */}
       <div className="admin-section">
         <h2>{editingPartnerId ? "取引先を編集" : "取引先を追加"}</h2>
@@ -966,7 +1005,11 @@ export default function AdminDashboardPage() {
           </div>
         )}
       </div>
+        </>
+      )}
 
+      {activeTab === "orders" && (
+        <>
       {/* 注文履歴 */}
       <div className="admin-section">
         <h2>注文履歴</h2>
@@ -976,16 +1019,30 @@ export default function AdminDashboardPage() {
           <p className="hint">まだ注文がありません。</p>
         ) : (
           <div>
-            {orders.map((o) => (
+            {orders.map((o) => {
+              const hasPreorder = o.items.some((it) => it.is_preorder);
+              return (
               <div className="order-card" key={o.id}>
                 <div className="order-card-header">
-                  <span>{new Date(o.created_at).toLocaleString("ja-JP")}</span>
+                  <span>
+                    {new Date(o.created_at).toLocaleString("ja-JP")}
+                    {hasPreorder && (
+                      <span className="badge" style={{ marginLeft: 8 }}>
+                        予約あり
+                      </span>
+                    )}
+                  </span>
                   <span>¥{o.amount_total.toLocaleString("ja-JP")}</span>
                 </div>
                 <div className="order-card-items">
                   {o.items.map((it, i) => (
                     <div key={i}>
                       {it.name} × {it.quantity}
+                      {it.is_preorder && (
+                        <span className="badge" style={{ marginLeft: 6 }}>
+                          予約
+                        </span>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1009,10 +1066,13 @@ export default function AdminDashboardPage() {
                   </button>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
+        </>
+      )}
     </div>
   );
 }
