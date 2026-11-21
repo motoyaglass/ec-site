@@ -207,6 +207,8 @@ Cookieの署名には `ADMIN_SESSION_SECRET` を利用しているため、追�
 
 - **管理ログインのレート制限**: `/api/admin/login` はIPアドレスごとに15分間で5回失敗するとロックされます(`app/api/admin/login/route.ts`)。サーバーのメモリ上で管理する簡易実装のため、再デプロイするとリセットされます。
 - **セキュリティヘッダー/CSP**: `next.config.js` でサイト全体に `Content-Security-Policy`・`X-Frame-Options`・`X-Content-Type-Options`・`Referrer-Policy`・`Permissions-Policy`・`Strict-Transport-Security` を設定しています。管理ログインページを含めiframe埋め込み(クリックジャッキング)を禁止し、スクリプトの読み込み元もTurnstile(`challenges.cloudflare.com`)と自サイトのみに制限しています。
+- **管理セッションの署名トークン化**: ログインCookie(`admin_session`)には秘密鍵そのものではなく「有効期限+HMAC署名」のトークンを入れています(`lib/adminSession.ts`)。Cookieが漏れても秘密鍵は漏れず、7日の有効期限もサーバー側で検証します。パスワード比較も定数時間比較です。
+- **購入者限定ブログの署名鍵の分離**: 閲覧用Cookieの署名鍵は `ADMIN_SESSION_SECRET` から派生させた別の鍵を使い、本番で環境変数が未設定の場合は固定値にフォールバックせず閲覧不可になります。
 - **画像最適化のSSRF対策**: next/imageは自サイト内のロゴ画像にしか使っていないため、`next.config.js` の `images.remotePatterns` は設定していません(外部URLを `/_next/image` 経由で任意に読み込ませない)。商品画像など外部から受け取る画像は通常の `<img>` タグで表示しています。
 
 ## 補足

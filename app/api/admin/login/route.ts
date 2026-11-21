@@ -1,4 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import {
+  ADMIN_COOKIE_NAME,
+  ADMIN_SESSION_MAX_AGE_SEC,
+  createAdminSessionToken,
+  safeEqual,
+} from "@/lib/adminSession";
 
 // ログイン試行のレート制限(簡易実装)。IPアドレスごとに一定時間内の失敗回数を記録し、
 // 超えた場合はパスワードが合っていてもロックする(総当たり攻撃対策)。
@@ -84,7 +90,13 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  if (!password || password !== process.env.ADMIN_PASSWORD) {
+  const expectedPassword = process.env.ADMIN_PASSWORD;
+  if (
+    typeof password !== "string" ||
+    !password ||
+    !expectedPassword ||
+    !safeEqual(password, expectedPassword)
+  ) {
     recordFailedAttempt(clientKey);
     return NextResponse.json({ ok: false, error: "パスワードが違います" }, { status: 401 });
   }
@@ -100,12 +112,13 @@ export async function POST(req: NextRequest) {
   }
 
   const res = NextResponse.json({ ok: true });
-  res.cookies.set("admin_session", secret, {
+  // Cookieには秘密鍵そのものではなく、有効期限つきの署名トークンを入れる(lib/adminSession.ts)
+  res.cookies.set(ADMIN_COOKIE_NAME, await createAdminSessionToken(secret), {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    maxAge: 60 * 60 * 24 * 7, // 7日
+    maxAge: ADMIN_SESSION_MAX_AGE_SEC,
   });
   return res;
 }

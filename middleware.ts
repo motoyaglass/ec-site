@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { ADMIN_COOKIE_NAME, verifyAdminSessionToken } from "@/lib/adminSession";
 
-const COOKIE_NAME = "admin_session";
-
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   const isProtectedPage = pathname.startsWith("/admin/dashboard");
@@ -25,10 +24,8 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  const session = req.cookies.get(COOKIE_NAME)?.value;
-  const expected = process.env.ADMIN_SESSION_SECRET;
-
-  const authorized = Boolean(session) && Boolean(expected) && session === expected;
+  const session = req.cookies.get(ADMIN_COOKIE_NAME)?.value;
+  const authorized = await verifyAdminSessionToken(session, process.env.ADMIN_SESSION_SECRET);
 
   if (!authorized) {
     if (isProtectedApi) {
