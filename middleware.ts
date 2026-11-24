@@ -11,6 +11,8 @@ export async function middleware(req: NextRequest) {
     (pathname.startsWith("/api/products") &&
       req.method !== "GET" &&
       !pathname.endsWith("/click")) ||
+    // /api/products?all=1 は非公開商品(書類専用商品など)も返すため管理者のみ
+    (pathname === "/api/products" && req.method === "GET" && req.nextUrl.searchParams.has("all")) ||
     (pathname.startsWith("/api/posts") && req.method !== "GET") ||
     (pathname.startsWith("/api/partners") && req.method !== "GET") ||
     // /api/orders は注文者の個人情報を含むため、GETも含めて常に保護する

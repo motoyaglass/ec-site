@@ -5,13 +5,15 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 // 管理画面「書類・確定申告」タブ。請求書・納品書の作成、経費入力、青色申告の簡易集計、マスタ設定をまとめたもの。
 // データはすべてサーバー(Postgres)に保存し、/api/bookkeeping/* 経由で読み書きする。
 
-type Item = { name: string; qty: number; price: number };
+type Item = { name: string; size?: string; qty: number; price: number };
 type Doc = {
   id: string; no: string; to: string; date: string; due: string; note: string;
   items: Item[]; sub: number; tax: number; total: number;
 };
 type Expense = { id: string; date: string; category: string; vendor: string; memo: string; amount: number };
-type Product = { id: string; name: string; price: number };
+// ECサイトの商品(productsテーブル)をそのまま書類の品目マスタとして使う。
+// 非公開(ショップに出さない)商品も含めて取得する。
+type Product = { id: string; name: string; price: number; size: string | null; is_active: boolean };
 type Vendor = { id: string; name: string; contact: string };
 type Profile = Record<string, string>;
 type DocType = "invoice" | "delivery";
@@ -107,7 +109,11 @@ export default function BookkeepingPanel() {
     try {
       const [p, pr, v, inv, dn, ex] = await Promise.all([
         api<{ profile: Profile }>("profile"),
-        api<{ products: Product[] }>("products"),
+        fetch("/api/products?all=1").then(async (r) => {
+          const d = await r.json().catch(() => ({}));
+          if (!r.ok) throw new Error((d as { error?: string }).error || "商品の読み込みに失敗しました");
+          return d as { products: Product[] };
+        }),
         api<{ vendors: Vendor[] }>("vendors"),
         api<{ documents: Doc[] }>("documents?type=invoice"),
         api<{ documents: Doc[] }>("documents?type=delivery"),
@@ -192,9 +198,10 @@ function DocEditor({
   const [busy, setBusy] = useState(false);
   const sheetId = `bk-sheet-${type}`;
 
-  const sub = useMemo(() => items.reduce((s, i) => s + i.qty * i.price, 0), [items]);
-  const tax = Math.floor(sub * 0.1);
-  const total = sub + tax;
+  // 単価はECサイトと同じ税込価格。合計=税込、税抜と消費税は内訳(参考)として計算する
+  const total = useMemo(() => items.reduce((s, i) => s + i.qty * i.price, 0), [items]);
+  const tax = Math.floor((total * 10) / 110);
+  const sub = total - tax;
 
   function updateItem(idx: number, patch: Partial<Item>) {
     setItems((prev) =>
@@ -203,7 +210,10 @@ function DocEditor({
         const next = { ...it, ...patch };
         if (patch.name !== undefined) {
           const match = products.find((p) => p.name === patch.name);
-          if (match) next.price = match.price; // 登録済み商品名なら単価を自動入力
+          if (match) {
+            next.price = match.price; // 登録済み商品名なら単価・サイズを自動入力
+            next.size = match.size || "";
+          }
         }
         return next;
       })
@@ -309,9 +319,14 @@ function DocEditor({
             <div className="bk-item-row" key={idx}>
               <input
                 list="bk-product-datalist"
-                placeholder="品名(マスタ登録済み商品 or 自由入力)"
+                placeholder="品名(登録済み商品 or 自由入力)"
                 value={it.name}
                 onChange={(e) => updateItem(idx, { name: e.target.value })}
+              />
+              <input
+                placeholder="サイズ"
+                value={it.size || ""}
+                onChange={(e) => updateItem(idx, { size: e.target.value })}
               />
               <input
                 type="number" min={0} value={it.qty}
@@ -335,11 +350,11 @@ function DocEditor({
           >
             ＋ 品目を追加
           </button>
-          <p className="hint">品名にマスタ・設定で登録した商品名を入力すると、単価が自動入力されます。</p>
+          <p className="hint">品名にオンラインストアと共通の商品名を入力すると、単価(税込)が自動入力されます。商品は「商品」タブで管理します。</p>
           <div className="bk-totals">
-            <div>小計：{yen(sub)}</div>
-            <div>消費税（10%）：{yen(tax)}</div>
-            <div className="bk-grand">合計：{yen(total)}</div>
+            <div>税抜金額（参考）：{yen(sub)}</div>
+            <div>内消費税（10%・参考）：{yen(tax)}</div>
+            <div className="bk-grand">合計（税込）：{yen(total)}</div>
           </div>
         </div>
       </div>
@@ -389,19 +404,19 @@ function DocEditor({
           <span className="bk-amt">{yen(total)}</span>（税込）
         </div>
         <table className="bk-inv-items">
-          <thead><tr><th>品目</th><th>数量</th><th>単価</th><th>金額</th></tr></thead>
+          <thead><tr><th>品目</th><th>数量</th><th>単価(税込)</th><th>金額</th></tr></thead>
           <tbody>
             {items.map((i, idx) => (
               <tr key={idx}>
-                <td>{i.name || "(品名未入力)"}</td><td>{i.qty}</td><td>{yen(i.price)}</td><td>{yen(i.qty * i.price)}</td>
+                <td>{i.name || "(品名未入力)"}{i.size && <span className="bk-item-size"> （{i.size}）</span>}</td><td>{i.qty}</td><td>{yen(i.price)}</td><td>{yen(i.qty * i.price)}</td>
               </tr>
             ))}
           </tbody>
         </table>
         <div className="bk-inv-totals">
-          <div><span>小計</span><span>{yen(sub)}</span></div>
-          <div><span>消費税（10%）</span><span>{yen(tax)}</span></div>
-          <div className="bk-inv-grand"><span>合計</span><span>{yen(total)}</span></div>
+          <div><span>税抜金額（参考）</span><span>{yen(sub)}</span></div>
+          <div><span>内消費税（10%・参考）</span><span>{yen(tax)}</span></div>
+          <div className="bk-inv-grand"><span>合計（税込）</span><span>{yen(total)}</span></div>
         </div>
         {note && <div className="bk-inv-note">{note}</div>}
         <div className="bk-inv-footer">
@@ -629,8 +644,6 @@ function SettingsPanel({
   profile, products, vendors, onChanged,
 }: { profile: Profile; products: Product[]; vendors: Vendor[]; onChanged: () => void }) {
   const [form, setForm] = useState<Profile>(profile);
-  const [pmName, setPmName] = useState("");
-  const [pmPrice, setPmPrice] = useState("");
   const [vdName, setVdName] = useState("");
   const [vdContact, setVdContact] = useState("");
 
@@ -669,30 +682,10 @@ function SettingsPanel({
 
       <div>
         <div className="admin-section">
-          <h2>商品マスタ(書類の品目用)</h2>
-          <div className="field"><label>商品名</label><input value={pmName} onChange={(e) => setPmName(e.target.value)} /></div>
-          <div className="field"><label>単価</label><input type="number" min={0} value={pmPrice} onChange={(e) => setPmPrice(e.target.value)} /></div>
-          <button
-            className="btn btn-secondary"
-            onClick={() =>
-              run(async () => {
-                await api("products", { method: "POST", body: JSON.stringify({ name: pmName, price: Number(pmPrice) || 0 }) });
-                setPmName(""); setPmPrice("");
-              })
-            }
-          >
-            ＋ 登録
-          </button>
-          <table className="bk-table">
-            <tbody>
-              {products.map((p) => (
-                <tr key={p.id}>
-                  <td>{p.name}</td><td>{yen(p.price)}</td>
-                  <td><button className="btn btn-danger" onClick={() => run(() => api(`products/${p.id}`, { method: "DELETE" }))}>削除</button></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <h2>商品マスタ</h2>
+          <p className="hint">
+            商品はオンラインストアと共通で、「商品」タブで管理します(現在 {products.length} 件)。請求書・納品書の品目では、ここに登録した商品名を入力すると単価が自動入力されます。ショップに出さない商品(受注専用など)は、商品の「ショップに公開する」をオフにして登録してください。
+          </p>
         </div>
 
         <div className="admin-section">

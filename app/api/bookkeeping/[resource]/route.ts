@@ -4,7 +4,7 @@ import { query } from "@/lib/db";
 export const dynamic = "force-dynamic";
 
 // 書類作成・確定申告用のデータAPI。/api/bookkeeping/* は middleware で管理者ログイン必須。
-// resource: profile | products | vendors | documents | expenses
+// resource: profile | vendors | documents | expenses(商品はECの /api/products を共通で使う)
 
 const PROFILE_KEYS = [
   "s-name", "s-addr", "s-tel", "s-mail", "s-business", "s-invoiceno",
@@ -31,10 +31,6 @@ export async function GET(req: NextRequest, { params }: { params: { resource: st
         rows.forEach((r) => (profile[r.key] = r.value));
         return NextResponse.json({ profile });
       }
-      case "products":
-        return NextResponse.json({
-          products: await query("select id, name, price from bk_products order by created_at"),
-        });
       case "vendors":
         return NextResponse.json({
           vendors: await query("select id, name, contact from bk_vendors order by created_at"),
@@ -82,12 +78,6 @@ export async function POST(req: NextRequest, { params }: { params: { resource: s
         }
         return NextResponse.json({ ok: true });
       }
-      case "products": {
-        const name = str(body.name, 200).trim();
-        if (!name) return bad("商品名を入力してください");
-        await query("insert into bk_products (name, price) values ($1, $2)", [name, Math.max(0, int(body.price))]);
-        return NextResponse.json({ ok: true });
-      }
       case "vendors": {
         const name = str(body.name, 200).trim();
         if (!name) return bad("業者名を入力してください");
@@ -98,20 +88,23 @@ export async function POST(req: NextRequest, { params }: { params: { resource: s
         const type = body.type;
         if (type !== "invoice" && type !== "delivery") return bad("type が不正です");
         const items = Array.isArray(body.items)
-          ? body.items.slice(0, 100).map((i: { name?: unknown; qty?: unknown; price?: unknown }) => ({
+          ? body.items.slice(0, 100).map((i: { name?: unknown; size?: unknown; qty?: unknown; price?: unknown }) => ({
               name: str(i?.name, 200),
+              size: str(i?.size, 200),
               qty: Math.max(0, int(i?.qty)),
               price: Math.max(0, int(i?.price)),
             }))
           : [];
-        // 金額はクライアントの値を信用せずサーバーで再計算する(税込・端数切り捨ての10%)
-        const sub = items.reduce((s: number, i: { qty: number; price: number }) => s + i.qty * i.price, 0);
-        const tax = Math.floor(sub * 0.1);
+        // 金額はクライアントの値を信用せずサーバーで再計算する。単価はECと同じ税込価格で、
+        // 合計(税込)=Σ単価×数量、消費税は内税(10%)の内訳として切り捨て計算、税抜=合計-消費税
+        const total = items.reduce((s: number, i: { qty: number; price: number }) => s + i.qty * i.price, 0);
+        const tax = Math.floor((total * 10) / 110);
+        const sub = total - tax;
         await query(
           `insert into bk_documents (type, doc_no, to_name, doc_date, due_date, note, items, sub, tax, total)
            values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
           [type, str(body.no, 100), str(body.to, 200), str(body.date, 10), str(body.due, 10),
-           str(body.note, 2000), JSON.stringify(items), sub, tax, sub + tax]
+           str(body.note, 2000), JSON.stringify(items), sub, tax, total]
         );
         return NextResponse.json({ ok: true });
       }

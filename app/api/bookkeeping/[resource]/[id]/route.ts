@@ -4,7 +4,6 @@ import { query } from "@/lib/db";
 export const dynamic = "force-dynamic";
 
 const TABLES: Record<string, string> = {
-  products: "bk_products",
   vendors: "bk_vendors",
   documents: "bk_documents",
   expenses: "bk_expenses",

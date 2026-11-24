@@ -33,6 +33,8 @@ export async function POST(req: NextRequest) {
   const category =
     typeof body.category === "string" && body.category.trim() ? body.category.trim() : null;
 
+  const size = typeof body.size === "string" && body.size.trim() ? body.size.trim().slice(0, 200) : null;
+
   const isPreorder = body.is_preorder === true;
 
   const preorderNote =
@@ -49,8 +51,8 @@ export async function POST(req: NextRequest) {
 
   try {
     const products = await query<Product>(
-      `insert into products (name, price, description, image_url, is_active, stock_quantity, available_at, category, is_preorder, preorder_note, preorder_ship_date)
-       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      `insert into products (name, price, description, image_url, is_active, stock_quantity, available_at, category, is_preorder, preorder_note, preorder_ship_date, size)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        returning *`,
       [
         body.name,
@@ -64,6 +66,7 @@ export async function POST(req: NextRequest) {
         isPreorder,
         preorderNote,
         preorderShipDate,
+        size,
       ]
     );
     return NextResponse.json({ product: products[0] });

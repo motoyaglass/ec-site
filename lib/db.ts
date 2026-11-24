@@ -35,6 +35,7 @@ export type Product = {
   stock_quantity: number;
   available_at: string | null;
   category: string | null;
+  size: string | null;
   is_preorder: boolean;
   preorder_note: string | null;
   preorder_ship_date: string | null;

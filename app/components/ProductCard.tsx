@@ -50,6 +50,7 @@ export default function ProductCard({ product: p }: { product: Product }) {
         {p.category && <div className="product-category">{p.category}</div>}
         <div className="product-name">{p.name}</div>
         {p.description && <div className="product-desc">{p.description}</div>}
+        {p.size && <div className="product-category">サイズ: {p.size}</div>}
         <div className="product-price">{formatPrice(p.price)}</div>
         {isLowStock && (
           <p className="hint" style={{ marginBottom: 8 }}>

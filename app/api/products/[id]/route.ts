@@ -49,6 +49,13 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     fields.push(`category = $${i++}`);
     values.push(body.category.trim());
   }
+  if (body.size === null || body.size === "") {
+    fields.push(`size = $${i++}`);
+    values.push(null);
+  } else if (typeof body.size === "string") {
+    fields.push(`size = $${i++}`);
+    values.push(body.size.trim().slice(0, 200));
+  }
   if (typeof body.is_preorder === "boolean") {
     fields.push(`is_preorder = $${i++}`);
     values.push(body.is_preorder);

@@ -588,7 +588,8 @@ main {
 .bk-subtabs { margin-top: -8px; }
 .bk-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
 .bk-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.bk-item-row { display: grid; grid-template-columns: 2fr 0.8fr 1fr auto; gap: 8px; margin-bottom: 10px; }
+.bk-item-row { display: grid; grid-template-columns: 2fr 1.2fr 0.7fr 1fr auto; gap: 8px; margin-bottom: 10px; }
+.bk-item-size { color: #666; font-size: 11.5px; }
 .bk-totals { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border); text-align: right; }
 .bk-totals div { margin: 4px 0; }
 .bk-grand { font-size: 16px; font-weight: 700; }
@@ -629,7 +630,7 @@ main {
 
 @media (max-width: 640px) {
   .bk-layout, .bk-row2 { grid-template-columns: 1fr; }
-  .bk-item-row { grid-template-columns: 1fr 70px 90px auto; }
+  .bk-item-row { grid-template-columns: 1fr 1fr; }
   .bk-doc-sheet { padding: 24px 18px; }
 }
 

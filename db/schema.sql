@@ -27,6 +27,9 @@ alter table products add column if not exists available_at timestamptz;
 -- 商品カテゴリ(任意)
 alter table products add column if not exists category text;
 
+-- 商品のサイズ(自由入力。例: 口径6×高さ10cm)。ショップ・請求書・納品書に表示する。
+alter table products add column if not exists size text;
+
 -- 予約販売(受注生産)。trueの場合、商品一覧・詳細に「予約販売」バッジと発送目安を表示する。
 alter table products add column if not exists is_preorder boolean not null default false;
 -- 発送目安を伝える自由入力メッセージ(例: 「受注生産のため発送まで3〜4週間」)
@@ -109,13 +112,7 @@ create table if not exists bk_settings (
   value text not null default ''
 );
 
--- 書類用の商品マスタ(ECの商品とは別。請求書の品目入力で単価を自動入力するため)
-create table if not exists bk_products (
-  id uuid primary key default gen_random_uuid(),
-  name text not null,
-  price integer not null default 0,
-  created_at timestamptz not null default now()
-);
+-- (商品マスタはECの products テーブルを書類の品目にも共通で使う)
 
 -- 取引先(業者)マスタ
 create table if not exists bk_vendors (
