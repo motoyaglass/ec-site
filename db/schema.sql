@@ -27,8 +27,12 @@ alter table products add column if not exists available_at timestamptz;
 -- 商品カテゴリ(任意)
 alter table products add column if not exists category text;
 
--- 商品のサイズ(自由入力。例: 口径6×高さ10cm)。ショップ・請求書・納品書に表示する。
-alter table products add column if not exists size text;
+-- 商品サイズ(cm、小数可)。仕上がりサイズはショップ・請求書・納品書に表示し、
+-- 制作途中の型のサイズ(mold_*)は管理画面でのみ扱う(公開APIには含めない)。
+alter table products add column if not exists finished_height double precision;
+alter table products add column if not exists finished_diameter double precision;
+alter table products add column if not exists mold_height double precision;
+alter table products add column if not exists mold_diameter double precision;
 
 -- 予約販売(受注生産)。trueの場合、商品一覧・詳細に「予約販売」バッジと発送目安を表示する。
 alter table products add column if not exists is_preorder boolean not null default false;

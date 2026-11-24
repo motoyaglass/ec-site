@@ -8,9 +8,13 @@ export async function GET(req: NextRequest) {
   const all = req.nextUrl.searchParams.get("all");
 
   try {
+    // 型のサイズ(mold_*)は制作用の内部情報のため、公開側のAPIには含めない(?all=1 は管理者のみ)
+    const publicColumns =
+      "id, name, price, description, image_url, is_active, stock_quantity, available_at, category, " +
+      "finished_height, finished_diameter, is_preorder, preorder_note, preorder_ship_date, created_at";
     const sql = all
       ? "select * from products order by created_at desc"
-      : "select * from products where is_active = true order by created_at desc";
+      : `select ${publicColumns} from products where is_active = true order by created_at desc`;
     const products = await query<Product>(sql);
     return NextResponse.json({ products });
   } catch (err) {
@@ -33,7 +37,12 @@ export async function POST(req: NextRequest) {
   const category =
     typeof body.category === "string" && body.category.trim() ? body.category.trim() : null;
 
-  const size = typeof body.size === "string" && body.size.trim() ? body.size.trim().slice(0, 200) : null;
+  // サイズ(cm)。空・不正値・0以下は null
+  const cm = (v: unknown): number | null => {
+    if (v === null || v === undefined || v === "") return null;
+    const n = Number(v);
+    return Number.isFinite(n) && n > 0 && n < 1000 ? Math.round(n * 10) / 10 : null;
+  };
 
   const isPreorder = body.is_preorder === true;
 
@@ -51,8 +60,8 @@ export async function POST(req: NextRequest) {
 
   try {
     const products = await query<Product>(
-      `insert into products (name, price, description, image_url, is_active, stock_quantity, available_at, category, is_preorder, preorder_note, preorder_ship_date, size)
-       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      `insert into products (name, price, description, image_url, is_active, stock_quantity, available_at, category, is_preorder, preorder_note, preorder_ship_date, finished_height, finished_diameter, mold_height, mold_diameter)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
        returning *`,
       [
         body.name,
@@ -66,7 +75,10 @@ export async function POST(req: NextRequest) {
         isPreorder,
         preorderNote,
         preorderShipDate,
-        size,
+        cm(body.finished_height),
+        cm(body.finished_diameter),
+        cm(body.mold_height),
+        cm(body.mold_diameter),
       ]
     );
     return NextResponse.json({ product: products[0] });

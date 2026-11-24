@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { formatFinishedSize } from "@/lib/productSize";
 
 // 管理画面「書類・確定申告」タブ。請求書・納品書の作成、経費入力、青色申告の簡易集計、マスタ設定をまとめたもの。
 // データはすべてサーバー(Postgres)に保存し、/api/bookkeeping/* 経由で読み書きする。
@@ -13,7 +14,10 @@ type Doc = {
 type Expense = { id: string; date: string; category: string; vendor: string; memo: string; amount: number };
 // ECサイトの商品(productsテーブル)をそのまま書類の品目マスタとして使う。
 // 非公開(ショップに出さない)商品も含めて取得する。
-type Product = { id: string; name: string; price: number; size: string | null; is_active: boolean };
+type Product = {
+  id: string; name: string; price: number; is_active: boolean;
+  finished_height: number | null; finished_diameter: number | null;
+};
 type Vendor = { id: string; name: string; contact: string };
 type Profile = Record<string, string>;
 type DocType = "invoice" | "delivery";
@@ -212,7 +216,7 @@ function DocEditor({
           const match = products.find((p) => p.name === patch.name);
           if (match) {
             next.price = match.price; // 登録済み商品名なら単価・サイズを自動入力
-            next.size = match.size || "";
+            next.size = formatFinishedSize(match); // 書類には仕上がりサイズのみ
           }
         }
         return next;

@@ -49,12 +49,12 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     fields.push(`category = $${i++}`);
     values.push(body.category.trim());
   }
-  if (body.size === null || body.size === "") {
-    fields.push(`size = $${i++}`);
-    values.push(null);
-  } else if (typeof body.size === "string") {
-    fields.push(`size = $${i++}`);
-    values.push(body.size.trim().slice(0, 200));
+  for (const key of ["finished_height", "finished_diameter", "mold_height", "mold_diameter"]) {
+    if (!(key in body)) continue;
+    const raw = body[key];
+    const n = raw === null || raw === "" ? null : Number(raw);
+    fields.push(`${key} = $${i++}`); // key は上の固定リストのみ
+    values.push(n !== null && Number.isFinite(n) && n > 0 && n < 1000 ? Math.round(n * 10) / 10 : null);
   }
   if (typeof body.is_preorder === "boolean") {
     fields.push(`is_preorder = $${i++}`);

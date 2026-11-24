@@ -35,7 +35,10 @@ export type Product = {
   stock_quantity: number;
   available_at: string | null;
   category: string | null;
-  size: string | null;
+  finished_height: number | null; // 仕上がりの高さ(cm)
+  finished_diameter: number | null; // 仕上がりの径(cm)
+  mold_height: number | null; // 型の高さ(cm)。管理画面専用
+  mold_diameter: number | null; // 型の径(cm)。管理画面専用
   is_preorder: boolean;
   preorder_note: string | null;
   preorder_ship_date: string | null;

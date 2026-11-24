@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { Product, Post, Order, Partner } from "@/lib/db";
 import RichTextEditor from "../../components/RichTextEditor";
 import BookkeepingPanel from "./BookkeepingPanel";
+import { formatFinishedSize } from "@/lib/productSize";
 
 type DailyStat = { day: string; count: number };
 type HourlyStat = { hour: string; count: number };
@@ -41,7 +42,10 @@ const emptyProductForm = {
   stock_quantity: "1",
   available_at: "",
   category: "",
-  size: "",
+  finished_height: "",
+  finished_diameter: "",
+  mold_height: "",
+  mold_diameter: "",
   is_preorder: false,
   preorder_note: "",
   preorder_ship_date: "",
@@ -221,7 +225,10 @@ export default function AdminDashboardPage() {
       stock_quantity: String(p.stock_quantity ?? 0),
       available_at: toDatetimeLocalValue(p.available_at),
       category: p.category ?? "",
-      size: p.size ?? "",
+      finished_height: p.finished_height != null ? String(p.finished_height) : "",
+      finished_diameter: p.finished_diameter != null ? String(p.finished_diameter) : "",
+      mold_height: p.mold_height != null ? String(p.mold_height) : "",
+      mold_diameter: p.mold_diameter != null ? String(p.mold_diameter) : "",
       is_preorder: p.is_preorder ?? false,
       preorder_note: p.preorder_note ?? "",
       preorder_ship_date: p.preorder_ship_date ? p.preorder_ship_date.slice(0, 10) : "",
@@ -268,7 +275,10 @@ export default function AdminDashboardPage() {
           ? new Date(productForm.available_at).toISOString()
           : null,
         category: productForm.category.trim() || null,
-        size: productForm.size.trim() || null,
+        finished_height: productForm.finished_height || null,
+        finished_diameter: productForm.finished_diameter || null,
+        mold_height: productForm.mold_height || null,
+        mold_diameter: productForm.mold_diameter || null,
         is_preorder: productForm.is_preorder,
         preorder_note: productForm.preorder_note.trim() || null,
         preorder_ship_date: productForm.preorder_ship_date || null,
@@ -715,14 +725,37 @@ export default function AdminDashboardPage() {
           </div>
           <p className="hint">入力すると、ショップページでカテゴリごとの絞り込みができるようになります。</p>
           <div className="field">
-            <label>サイズ(任意)</label>
-            <input
-              value={productForm.size}
-              onChange={(e) => setProductForm((f) => ({ ...f, size: e.target.value }))}
-              placeholder="例: 口径6×高さ10cm"
-            />
+            <label>仕上がりサイズ(cm・任意)</label>
+            <div className="bk-row2">
+              <input
+                type="number" min={0} step="0.1" placeholder="高さ"
+                value={productForm.finished_height}
+                onChange={(e) => setProductForm((f) => ({ ...f, finished_height: e.target.value }))}
+              />
+              <input
+                type="number" min={0} step="0.1" placeholder="径"
+                value={productForm.finished_diameter}
+                onChange={(e) => setProductForm((f) => ({ ...f, finished_diameter: e.target.value }))}
+              />
+            </div>
           </div>
           <p className="hint">ショップの商品カードと、請求書・納品書の品目に表示されます。</p>
+          <div className="field">
+            <label>型のサイズ(cm・任意・制作用)</label>
+            <div className="bk-row2">
+              <input
+                type="number" min={0} step="0.1" placeholder="高さ"
+                value={productForm.mold_height}
+                onChange={(e) => setProductForm((f) => ({ ...f, mold_height: e.target.value }))}
+              />
+              <input
+                type="number" min={0} step="0.1" placeholder="径"
+                value={productForm.mold_diameter}
+                onChange={(e) => setProductForm((f) => ({ ...f, mold_diameter: e.target.value }))}
+              />
+            </div>
+          </div>
+          <p className="hint">制作途中の型のサイズです。管理画面にだけ表示され、ショップや書類には出ません。</p>
           <div className="field">
             <label>在庫数</label>
             <input
@@ -825,7 +858,9 @@ export default function AdminDashboardPage() {
                   <span className="hint" style={{ margin: 0 }}>
                     {p.stock_quantity <= 0 ? "SOLD OUT" : `在庫 ${p.stock_quantity}`}
                     {p.category && ` ・ ${p.category}`}
-                    {p.size && ` ・ ${p.size}`}
+                    {formatFinishedSize(p) && ` ・ 仕上がり ${formatFinishedSize(p)}`}
+                    {(p.mold_height != null || p.mold_diameter != null) &&
+                      ` ・ 型 ${[p.mold_height != null ? `高さ${p.mold_height}cm` : "", p.mold_diameter != null ? `径${p.mold_diameter}cm` : ""].filter(Boolean).join(" × ")}`}
                     {p.is_preorder && " ・ 予約販売"}
                   </span>
                   {p.available_at && new Date(p.available_at) > new Date() && (
