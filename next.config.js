@@ -11,7 +11,8 @@ const securityHeaders = [
       // Next.js(App Router)はハイドレーション用のインラインスクリプトを出力するため 'unsafe-inline' が必須
       // (nonce方式にしない限り外せない。外すとページがハイドレートされずログイン等のJS機能が全て動かなくなる)。
       // 外部読み込みは Cloudflare Turnstile(管理ログインのボット対策ウィジェット)のみ許可。
-      "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com",
+      // cdnjs.cloudflare.com は管理画面の書類PDF出力(html2pdf.js)の読み込み用
+      "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://cdnjs.cloudflare.com",
       // 管理画面・各ページで style={{...}} のインラインスタイルを多用しているため style-src のみ unsafe-inline を許可
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data:",

@@ -18,7 +18,9 @@ export async function middleware(req: NextRequest) {
     // /api/upload は管理画面からの画像アップロード専用(配信用の /api/uploads/* は公開のまま)
     (pathname === "/api/upload" || pathname.startsWith("/api/upload/")) ||
     // /api/stats はアクセス状況の集計(管理画面専用)。/api/track は訪問者から匿名で叩かれるため公開のまま。
-    pathname.startsWith("/api/stats");
+    pathname.startsWith("/api/stats") ||
+    // /api/bookkeeping は請求書・経費など業務データのため、GETも含めて常に保護する
+    pathname.startsWith("/api/bookkeeping");
 
   if (!isProtectedPage && !isProtectedApi) {
     return NextResponse.next();
@@ -47,5 +49,6 @@ export const config = {
     "/api/orders/:path*",
     "/api/upload/:path*",
     "/api/stats/:path*",
+    "/api/bookkeeping/:path*",
   ],
 };

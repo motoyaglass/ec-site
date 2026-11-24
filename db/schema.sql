@@ -102,6 +102,60 @@ create table if not exists partners (
 -- 既存環境向け(テーブルが既にある場合に列を追加)
 alter table partners add column if not exists address text;
 
+-- ===== 書類作成・確定申告(管理画面の「書類・確定申告」タブ) =====
+-- 発行者情報(工房名・住所・振込先など)。key/value形式。
+create table if not exists bk_settings (
+  key text primary key,
+  value text not null default ''
+);
+
+-- 書類用の商品マスタ(ECの商品とは別。請求書の品目入力で単価を自動入力するため)
+create table if not exists bk_products (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  price integer not null default 0,
+  created_at timestamptz not null default now()
+);
+
+-- 取引先(業者)マスタ
+create table if not exists bk_vendors (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  contact text not null default '',
+  created_at timestamptz not null default now()
+);
+
+-- 請求書・納品書の発行履歴
+create table if not exists bk_documents (
+  id uuid primary key default gen_random_uuid(),
+  type text not null,                 -- 'invoice' | 'delivery'
+  doc_no text not null default '',
+  to_name text not null default '',
+  doc_date text not null default '',  -- YYYY-MM-DD
+  due_date text not null default '',
+  note text not null default '',
+  items jsonb not null default '[]'::jsonb,  -- [{"name":"...","qty":1,"price":4500}]
+  sub integer not null default 0,
+  tax integer not null default 0,
+  total integer not null default 0,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists bk_documents_type_idx on bk_documents (type, doc_date);
+
+-- 経費
+create table if not exists bk_expenses (
+  id uuid primary key default gen_random_uuid(),
+  expense_date text not null,         -- YYYY-MM-DD
+  category text not null,
+  vendor text not null default '',
+  memo text not null default '',
+  amount integer not null default 0,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists bk_expenses_date_idx on bk_expenses (expense_date);
+
 -- 商品クリック数(「買物籠に入れる」ボタン押下)を記録するテーブル。
 -- どの商品が一番クリックされているかを管理画面で確認するために使う。
 create table if not exists product_clicks (

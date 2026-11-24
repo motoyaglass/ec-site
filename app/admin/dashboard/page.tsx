@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import type { Product, Post, Order, Partner } from "@/lib/db";
 import RichTextEditor from "../../components/RichTextEditor";
+import BookkeepingPanel from "./BookkeepingPanel";
 
 type DailyStat = { day: string; count: number };
 type HourlyStat = { hour: string; count: number };
@@ -71,13 +72,14 @@ const emptyPartnerForm = {
   is_active: true,
 };
 
-type AdminTab = "products" | "posts" | "partners" | "orders" | "stats";
+type AdminTab = "products" | "posts" | "partners" | "orders" | "bookkeeping" | "stats";
 
 const ADMIN_TABS: { key: AdminTab; label: string }[] = [
   { key: "products", label: "商品" },
   { key: "posts", label: "ブログ" },
   { key: "partners", label: "取引先" },
   { key: "orders", label: "注文履歴" },
+  { key: "bookkeeping", label: "書類・確定申告" },
   { key: "stats", label: "アクセス状況" },
 ];
 
@@ -512,6 +514,8 @@ export default function AdminDashboardPage() {
           </button>
         ))}
       </div>
+
+      {activeTab === "bookkeeping" && <BookkeepingPanel />}
 
       {activeTab === "stats" && (
         <>
