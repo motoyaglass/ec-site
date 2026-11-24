@@ -12,10 +12,9 @@ type Doc = {
   items: Item[]; sub: number; tax: number; total: number;
 };
 type Expense = { id: string; date: string; category: string; vendor: string; memo: string; amount: number };
-// ECサイトの商品(productsテーブル)をそのまま書類の品目マスタとして使う。
-// 非公開(ショップに出さない)商品も含めて取得する。
+// 商品マスタ(product_masters)を書類の品目として使う。ECの出品もここから作るので同じデータ。
 type Product = {
-  id: string; name: string; price: number; is_active: boolean;
+  id: string; name: string; price: number;
   finished_height: number | null; finished_diameter: number | null;
 };
 type Vendor = { id: string; name: string; contact: string };
@@ -113,10 +112,10 @@ export default function BookkeepingPanel() {
     try {
       const [p, pr, v, inv, dn, ex] = await Promise.all([
         api<{ profile: Profile }>("profile"),
-        fetch("/api/products?all=1").then(async (r) => {
+        fetch("/api/masters").then(async (r) => {
           const d = await r.json().catch(() => ({}));
           if (!r.ok) throw new Error((d as { error?: string }).error || "商品の読み込みに失敗しました");
-          return d as { products: Product[] };
+          return d as { masters: Product[] };
         }),
         api<{ vendors: Vendor[] }>("vendors"),
         api<{ documents: Doc[] }>("documents?type=invoice"),
@@ -124,7 +123,7 @@ export default function BookkeepingPanel() {
         api<{ expenses: Expense[] }>("expenses"),
       ]);
       setProfile(p.profile);
-      setProducts(pr.products);
+      setProducts(pr.masters);
       setVendors(v.vendors);
       setInvoices(inv.documents);
       setDeliveries(dn.documents);
@@ -688,7 +687,7 @@ function SettingsPanel({
         <div className="admin-section">
           <h2>商品マスタ</h2>
           <p className="hint">
-            商品はオンラインストアと共通で、「商品」タブで管理します(現在 {products.length} 件)。請求書・納品書の品目では、ここに登録した商品名を入力すると単価が自動入力されます。ショップに出さない商品(受注専用など)は、商品の「ショップに公開する」をオフにして登録してください。
+            商品マスタはオンラインストアと共通で、「商品マスタ」タブで管理します(現在 {products.length} 件)。請求書・納品書の品目では、登録済みの商品名を入力すると単価とサイズが自動入力されます。
           </p>
         </div>
 

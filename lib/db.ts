@@ -37,12 +37,21 @@ export type Product = {
   category: string | null;
   finished_height: number | null; // 仕上がりの高さ(cm)
   finished_diameter: number | null; // 仕上がりの径(cm)
-  mold_height: number | null; // 型の高さ(cm)。管理画面専用
-  mold_diameter: number | null; // 型の径(cm)。管理画面専用
   is_preorder: boolean;
   preorder_note: string | null;
   preorder_ship_date: string | null;
+  master_id: string | null;
   created_at: string;
+};
+
+export type ProductMaster = {
+  id: string;
+  name: string;
+  price: number;
+  finished_height: number | null;
+  finished_diameter: number | null;
+  mold_height: number | null;
+  mold_diameter: number | null;
 };
 
 export type Post = {

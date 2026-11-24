@@ -2,9 +2,10 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import type { Product, Post, Order, Partner } from "@/lib/db";
+import type { Product, ProductMaster, Post, Order, Partner } from "@/lib/db";
 import RichTextEditor from "../../components/RichTextEditor";
 import BookkeepingPanel from "./BookkeepingPanel";
+import MasterPanel from "./MasterPanel";
 import { formatFinishedSize } from "@/lib/productSize";
 
 type DailyStat = { day: string; count: number };
@@ -44,8 +45,7 @@ const emptyProductForm = {
   category: "",
   finished_height: "",
   finished_diameter: "",
-  mold_height: "",
-  mold_diameter: "",
+  master_id: "",
   is_preorder: false,
   preorder_note: "",
   preorder_ship_date: "",
@@ -77,9 +77,10 @@ const emptyPartnerForm = {
   is_active: true,
 };
 
-type AdminTab = "products" | "posts" | "partners" | "orders" | "bookkeeping" | "stats";
+type AdminTab = "masters" | "products" | "posts" | "partners" | "orders" | "bookkeeping" | "stats";
 
 const ADMIN_TABS: { key: AdminTab; label: string }[] = [
+  { key: "masters", label: "商品マスタ" },
   { key: "products", label: "商品" },
   { key: "posts", label: "ブログ" },
   { key: "partners", label: "取引先" },
@@ -96,6 +97,8 @@ export default function AdminDashboardPage() {
   // 商品管理
   const [products, setProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
+  const [masters, setMasters] = useState<ProductMaster[]>([]);
+  const [masterQuery, setMasterQuery] = useState("");
   const [productForm, setProductForm] = useState(emptyProductForm);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [productError, setProductError] = useState<string | null>(null);
@@ -133,6 +136,12 @@ export default function AdminDashboardPage() {
     const data = await res.json();
     setProducts(data.products ?? []);
     setLoadingProducts(false);
+  }, []);
+
+  const loadMasters = useCallback(async () => {
+    const res = await fetch("/api/masters");
+    const data = await res.json().catch(() => ({}));
+    setMasters(data.masters ?? []);
   }, []);
 
   const loadPosts = useCallback(async () => {
@@ -200,11 +209,12 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     loadProducts();
+    loadMasters();
     loadPosts();
     loadPartners();
     loadOrders();
     loadStats();
-  }, [loadProducts, loadPosts, loadPartners, loadOrders, loadStats]);
+  }, [loadProducts, loadMasters, loadPosts, loadPartners, loadOrders, loadStats]);
 
   async function handleLogout() {
     await fetch("/api/admin/logout", { method: "POST" });
@@ -227,8 +237,7 @@ export default function AdminDashboardPage() {
       category: p.category ?? "",
       finished_height: p.finished_height != null ? String(p.finished_height) : "",
       finished_diameter: p.finished_diameter != null ? String(p.finished_diameter) : "",
-      mold_height: p.mold_height != null ? String(p.mold_height) : "",
-      mold_diameter: p.mold_diameter != null ? String(p.mold_diameter) : "",
+      master_id: p.master_id ?? "",
       is_preorder: p.is_preorder ?? false,
       preorder_note: p.preorder_note ?? "",
       preorder_ship_date: p.preorder_ship_date ? p.preorder_ship_date.slice(0, 10) : "",
@@ -277,8 +286,7 @@ export default function AdminDashboardPage() {
         category: productForm.category.trim() || null,
         finished_height: productForm.finished_height || null,
         finished_diameter: productForm.finished_diameter || null,
-        mold_height: productForm.mold_height || null,
-        mold_diameter: productForm.mold_diameter || null,
+        master_id: productForm.master_id || null,
         is_preorder: productForm.is_preorder,
         preorder_note: productForm.preorder_note.trim() || null,
         preorder_ship_date: productForm.preorder_ship_date || null,
@@ -530,6 +538,8 @@ export default function AdminDashboardPage() {
 
       {activeTab === "bookkeeping" && <BookkeepingPanel />}
 
+      {activeTab === "masters" && <MasterPanel masters={masters} onChanged={loadMasters} />}
+
       {activeTab === "stats" && (
         <>
       {/* アクセス状況 */}
@@ -662,6 +672,41 @@ export default function AdminDashboardPage() {
       <div className="admin-section">
         <h2>{editingProductId ? "商品を編集" : "商品を追加"}</h2>
         <form onSubmit={handleProductSubmit}>
+          {!editingProductId && (
+            <div className="field">
+              <label>① 商品マスタから選ぶ</label>
+              <input
+                value={masterQuery}
+                onChange={(e) => setMasterQuery(e.target.value)}
+                placeholder="商品名で検索"
+              />
+              <div className="master-tiles" style={{ maxHeight: 220, overflowY: "auto", marginTop: 8 }}>
+                {masters
+                  .filter((m) => !masterQuery.trim() || m.name.includes(masterQuery.trim()))
+                  .map((m) => (
+                    <button
+                      type="button"
+                      key={m.id}
+                      className={`master-tile ${productForm.master_id === m.id ? "active" : ""}`}
+                      onClick={() =>
+                        setProductForm((f) => ({
+                          ...f,
+                          master_id: m.id,
+                          name: m.name,
+                          price: String(m.price),
+                          finished_height: m.finished_height != null ? String(m.finished_height) : "",
+                          finished_diameter: m.finished_diameter != null ? String(m.finished_diameter) : "",
+                        }))
+                      }
+                    >
+                      <span className="master-tile-name">{m.name}</span>
+                      <span className="master-tile-price">¥{m.price.toLocaleString("ja-JP")}</span>
+                    </button>
+                  ))}
+                {masters.length === 0 && <p className="hint">先に「商品マスタ」タブで商品を登録してください。</p>}
+              </div>
+            </div>
+          )}
           <div className="field">
             <label>商品名</label>
             <input
@@ -709,6 +754,8 @@ export default function AdminDashboardPage() {
               </div>
             )}
           </div>
+          <details style={{ margin: "12px 0" }}>
+            <summary style={{ cursor: "pointer" }}>詳細設定(カテゴリ・サイズ・販売開始・予約販売)</summary>
           <div className="field">
             <label>カテゴリ(任意)</label>
             <input
@@ -740,22 +787,7 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <p className="hint">ショップの商品カードと、請求書・納品書の品目に表示されます。</p>
-          <div className="field">
-            <label>型のサイズ(cm・任意・制作用)</label>
-            <div className="bk-row2">
-              <input
-                type="number" min={0} step="0.1" placeholder="高さ"
-                value={productForm.mold_height}
-                onChange={(e) => setProductForm((f) => ({ ...f, mold_height: e.target.value }))}
-              />
-              <input
-                type="number" min={0} step="0.1" placeholder="径"
-                value={productForm.mold_diameter}
-                onChange={(e) => setProductForm((f) => ({ ...f, mold_diameter: e.target.value }))}
-              />
-            </div>
-          </div>
-          <p className="hint">制作途中の型のサイズです。管理画面にだけ表示され、ショップや書類には出ません。</p>
+          </details>
           <div className="field">
             <label>在庫数</label>
             <input
@@ -766,6 +798,8 @@ export default function AdminDashboardPage() {
             />
           </div>
           <p className="hint">在庫が0になると、商品一覧に表示されたままSOLD OUT表示になります。</p>
+          <details style={{ margin: "12px 0" }}>
+            <summary style={{ cursor: "pointer" }}>販売開始日時・予約販売</summary>
           <div className="field">
             <label>販売開始日時(任意)</label>
             <input
@@ -811,6 +845,7 @@ export default function AdminDashboardPage() {
               </p>
             </>
           )}
+          </details>
           <div className="checkbox-row">
             <input
               id="is_active"
@@ -859,8 +894,6 @@ export default function AdminDashboardPage() {
                     {p.stock_quantity <= 0 ? "SOLD OUT" : `在庫 ${p.stock_quantity}`}
                     {p.category && ` ・ ${p.category}`}
                     {formatFinishedSize(p) && ` ・ 仕上がり ${formatFinishedSize(p)}`}
-                    {(p.mold_height != null || p.mold_diameter != null) &&
-                      ` ・ 型 ${[p.mold_height != null ? `高さ${p.mold_height}cm` : "", p.mold_diameter != null ? `径${p.mold_diameter}cm` : ""].filter(Boolean).join(" × ")}`}
                     {p.is_preorder && " ・ 予約販売"}
                   </span>
                   {p.available_at && new Date(p.available_at) > new Date() && (

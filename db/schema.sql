@@ -109,6 +109,22 @@ create table if not exists partners (
 -- 既存環境向け(テーブルが既にある場合に列を追加)
 alter table partners add column if not exists address text;
 
+-- 商品マスタ(名前・価格・サイズの台帳)。ECへの出品(products)と請求書・納品書の品目のもとになる。
+-- 型のサイズ(mold_*)は制作用の内部情報で、管理画面でのみ扱う。サイズはcm。
+create table if not exists product_masters (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  price integer not null default 0,        -- 税込
+  finished_height double precision,
+  finished_diameter double precision,
+  mold_height double precision,
+  mold_diameter double precision,
+  created_at timestamptz not null default now()
+);
+
+-- 出品(products)がどのマスタから作られたか(任意)
+alter table products add column if not exists master_id uuid references product_masters(id) on delete set null;
+
 -- ===== 書類作成・確定申告(管理画面の「書類・確定申告」タブ) =====
 -- 発行者情報(工房名・住所・振込先など)。key/value形式。
 create table if not exists bk_settings (
@@ -116,7 +132,7 @@ create table if not exists bk_settings (
   value text not null default ''
 );
 
--- (商品マスタはECの products テーブルを書類の品目にも共通で使う)
+-- (書類の品目は商品マスタ product_masters を使う)
 
 -- 取引先(業者)マスタ
 create table if not exists bk_vendors (

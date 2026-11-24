@@ -44,6 +44,12 @@ export async function POST(req: NextRequest) {
     return Number.isFinite(n) && n > 0 && n < 1000 ? Math.round(n * 10) / 10 : null;
   };
 
+  const masterId =
+    typeof body.master_id === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.master_id)
+      ? body.master_id
+      : null;
+
   const isPreorder = body.is_preorder === true;
 
   const preorderNote =
@@ -60,8 +66,8 @@ export async function POST(req: NextRequest) {
 
   try {
     const products = await query<Product>(
-      `insert into products (name, price, description, image_url, is_active, stock_quantity, available_at, category, is_preorder, preorder_note, preorder_ship_date, finished_height, finished_diameter, mold_height, mold_diameter)
-       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+      `insert into products (name, price, description, image_url, is_active, stock_quantity, available_at, category, is_preorder, preorder_note, preorder_ship_date, finished_height, finished_diameter, master_id)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
        returning *`,
       [
         body.name,
@@ -77,8 +83,7 @@ export async function POST(req: NextRequest) {
         preorderShipDate,
         cm(body.finished_height),
         cm(body.finished_diameter),
-        cm(body.mold_height),
-        cm(body.mold_diameter),
+        masterId,
       ]
     );
     return NextResponse.json({ product: products[0] });

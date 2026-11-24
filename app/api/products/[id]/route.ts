@@ -49,7 +49,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     fields.push(`category = $${i++}`);
     values.push(body.category.trim());
   }
-  for (const key of ["finished_height", "finished_diameter", "mold_height", "mold_diameter"]) {
+  for (const key of ["finished_height", "finished_diameter"]) {
     if (!(key in body)) continue;
     const raw = body[key];
     const n = raw === null || raw === "" ? null : Number(raw);

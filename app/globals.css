@@ -1205,3 +1205,10 @@ main {
     gap: 24px;
   }
 }
+
+/* 商品マスタのタイル */
+.master-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; border: 1px solid var(--border); padding: 12px; }
+.master-tile { display: flex; flex-direction: column; gap: 6px; text-align: left; padding: 12px 14px; background: var(--card-bg); border: 1px solid var(--border); cursor: pointer; font: inherit; color: var(--fg); }
+.master-tile:hover, .master-tile.active { border-color: var(--fg); }
+.master-tile-name { font-size: 14px; font-weight: 600; }
+.master-tile-price { font-size: 16px; font-weight: 700; color: #3a6ea5; }
